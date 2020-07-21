@@ -12,11 +12,13 @@ let createNavType = (nav, navId) => {
 	let main_id = '';
 	for(let arg of nav){
 		let bool = navId === arg._id.toString();
+		// 视频分类 或者 文章分类
+		let frontName = (arg.nav_type === 'video') ? '/video-type/' : '/article-type/';
 		arr.push({
 			_id: arg._id,
 			name: arg.name,
 			active: bool ? true : false,
-			link: `/nav/${arg._id}.html`
+			link: `${frontName}${arg._id}.html`
 		})
 		if(bool){
 			main_id = arg._id;
@@ -29,6 +31,7 @@ let getVideoDetill = async (config, ctx, next, filter=false) => {
 
 	let videoInfoColl = getDB().collection('video_info');
 	let videoListColl = getDB().collection('video_list');
+	let artInfoColl = getDB().collection('article_info');
 	let otherColl = getDB().collection('other');
 
 	let vid = ctx.params.vid;
@@ -42,7 +45,7 @@ let getVideoDetill = async (config, ctx, next, filter=false) => {
 	if(curVideoInfo === null){
 		return false;
 	}
-	//
+
 	// 全部分类
 	let allNav = await otherColl.find({type: 'nav_type', parent_id: false, display: true}).sort({index: 1}).toArray();
 	// 源列表
@@ -51,16 +54,20 @@ let getVideoDetill = async (config, ctx, next, filter=false) => {
 		sourceQuery['type'] = 'player';
 	}
 	let sourceList = await videoListColl.find(sourceQuery).sort({index: 1}).toArray();
+	for(let arg of sourceList){
+		arg.list = arg.list.split('#');
+	}
 	// 当前视频的分类 ID
 	let curNavId = curVideoInfo['video_type'];
 	// 视频信息
 	let curNavType = await otherColl.findOne({type: 'nav_type', _id: curNavId});
+	let curNavTop = curNavType.parent_id ? await otherColl.findOne({type: 'nav_type', _id: curNavType.parent_id}) : curNavType;
 	curVideoInfo['video_type'] = {
 		_id: curNavType._id,
 		name: curNavType.name,
 	};
 	let lastInfoStr = `本视频《${curVideoInfo.videoTitle}》由${config.websiteName}${ctx.request.host}收集至网络发布。`
-	curVideoInfo['introduce'] = curVideoInfo['introduce'] ? (curVideoInfo['introduce'] + lastInfoStr) : '暂无内容描述。';
+	curVideoInfo['introduce'] = curVideoInfo['introduce'] ? (curNavTop.name + '《' + curVideoInfo.videoTitle + '》是由' + curVideoInfo.performer.split(',').join('/') + '等主演的' + curNavTop.name + '。该剧讲述了' + curVideoInfo['introduce'] + lastInfoStr) : '暂无内容描述。';
 	// 返回第一层nav id
 	let searchNavId = !curNavType.parent_id ? curNavType._id.toString() : curNavType.parent_id.toString();
 
@@ -77,14 +84,56 @@ let getVideoDetill = async (config, ctx, next, filter=false) => {
 	let popMovie = await videoInfoColl.find({display: true}).sort({rel_time: -1, video_rate: -1}).limit(10).toArray();
 	let newMovie = await videoInfoColl.find({display: true}).sort({rel_time: -1, update_time: -1}).limit(10).toArray();
 	let likeMovie = await videoInfoColl.find({display: true, video_type:  {$in: [curNavId]}, _id: {$nin: [vid]}}).sort({rel_time: -1, video_rate: -1}).limit(12).toArray();
+	// let articleRel = await artInfoColl.find({_id: {$in: curVideoInfo.news_id}}).toArray();
+	let articleRel = await artInfoColl.aggregate(
+		[
+			{
+		        $match: {
+		        	_id: {
+		        		$in: curVideoInfo.news_id
+		        	}
+		        }
+		    },
+		    {
+		    	$limit: 10
+		    },
+		    {
+		        $lookup: {
+		            from: "other",                   // 关联的表 名称
+		            localField: "article_type",      // 当前表的字段 需要关联到目标表
+		            foreignField: "_id",             // 目标表和当前表字段对应的字段
+		            as: "type"                       // 输出的字段
+		        }
+		    },
+		    {
+				$unwind: "$type"
+			},
+			{
+				$project: {
+					_id: 1,
+					"articleTitle" : 1,
+				    "articleImage" : 1,
+				    "poster" : 1,
+				    "article_type" : '$type.name',
+				    "introduce" : 1,
+				    "update_time" : 1,
+				    "popular" : 1,
+				    "allow_reply" : 1,
+				    "openSwiper" : 1,
+				    "display" : 1
+				}
+			}
+		]
+	).toArray();
 
 	let data = {
 		meta: {
-			title: `${curVideoInfo.videoTitle} - ${curNavType.name} - ${config.websiteName}`,
-			keywords: config.keywords,
+			title: `${curVideoInfo.videoTitle} - ${curNavType.seo.title} - ${config.websiteName}`,
+			keywords: curNavType.seo.keywords,
 			description: curVideoInfo.introduce,
 			hostName: ctx.protocols + '://' + ctx.host,
 		},
+		mealList: await otherColl.find({type: 'advert', shape: 'web'}).toArray(),
 		footer: config.footerInfo.replace(/\n/, '<br />'),
 		videoInfo: curVideoInfo,
 		source: sourceList,
@@ -94,8 +143,10 @@ let getVideoDetill = async (config, ctx, next, filter=false) => {
 		list: {
 			popMovie: popMovie,
 			newMovie: newMovie,
-			likeMovie: likeMovie
-		}
+			likeMovie: likeMovie,
+			articleRel: articleRel
+		},
+		publicCode: config.publicCode,
 	}
 	return data
 }
@@ -105,10 +156,12 @@ let getTypesData = async (config, ctx) => {
 	let videoInfoColl = getDB().collection('video_info');
 	let otherColl = getDB().collection('other');
 
-	let { pid=false, cid=false, sub_region=false, rel_time=false, language=false, page='', sort='_id' } = ctx.query;
+	let { pid=false, cid=false, sub_region=false, rel_time=false, language=false, page=1, sort='_id' } = ctx.query;
 
 	// init default param
-	page = /^[1-9]{1}[0-9]*$/.test(page) ? Number(page) : 1;
+	// page = /^[1-9]{1}[0-9]*$/.test(page) ? Number(page) : 1;
+	page = Number(page);
+	page = !page || page < 1 || page === Infinity ? 1 : page;
 	pid = (pid === '' || pid.length !== 24) ? false : new ObjectID(pid);
 	cid = (cid === '' || cid.length !== 24) ? false : new ObjectID(cid);
 	language = (language === '') ? false : language;
@@ -372,11 +425,13 @@ let getTypesData = async (config, ctx) => {
 			description: config.description,
 			hostName: ctx.protocols + '://' + ctx.host,
 		},
+		mealList: await otherColl.find({type: 'advert', shape: 'web'}).toArray(),
 		footer: config.footerInfo.replace(/\n/, '<br />'),
 		nav: navData,
 		isLogin: JSON.stringify(ctx.session1) !== '{}' ? true : false,
 		allTypeItem: allTypeItem,
-		curQueryList: curQueryList
+		curQueryList: curQueryList,
+		publicCode: config.publicCode,
 	}
 	return data
 }
@@ -387,8 +442,9 @@ let getSearchData = async (config, ctx) => {
 	let otherColl = getDB().collection('other');
 
 	let { name=false, page=1 } = ctx.query;
-	name = name ? name.trim() : false;
-	page = page && /\d+/.test(page) ? Number(page) : 1;
+	name = name ? name.trim() : "";
+	page = Number(page);
+	page = !page || page < 1 || page === Infinity ? 1 : page;
 
 	// 全部分类
 	let allNav = await otherColl.find({type: 'nav_type', parent_id: false, display: true}).sort({index: 1}).toArray();
@@ -464,6 +520,7 @@ let getSearchData = async (config, ctx) => {
 			description: config.description,
 			hostName: ctx.protocols + '://' + ctx.host,
 		},
+		mealList: await otherColl.find({type: 'advert', shape: 'web'}).toArray(),
 		isLogin: JSON.stringify(ctx.session1) !== '{}' ? true : false,
 		footer: config.footerInfo.replace(/\n/, '<br />'),
 		nav: navData,
@@ -472,7 +529,8 @@ let getSearchData = async (config, ctx) => {
 			page: page,
 			total: await videoInfoColl.find({display: true, videoTitle: eval("/" + name +"/i")}).count(),
 			list: searchVideoList
-		}
+		},
+		publicCode: config.publicCode,
 	}
 	return data
 }
@@ -484,13 +542,13 @@ let getCurNavData = async (config, ctx, next) => {
 
 	let isSwiperLen = 0;
 	if(config.openSwiper){
-		isSwiperLen = await videoInfoColl.find({popular: true, display: true}).count();
+		isSwiperLen = await videoInfoColl.find({openSwiper: true, display: true}).count();
 	}
 
 	let nid = ctx.params.nid;
 	let newNid = new ObjectID(nid);
 
-	let curNavExist = (nid && nid.length === 24) ? await otherColl.findOne({_id: newNid, type: "nav_type", parent_id: false, display: true}) : false;
+	let curNavExist = (nid && nid.length === 24) ? await otherColl.findOne({_id: newNid, type: "nav_type", nav_type: 'video', parent_id: false, display: true}) : false;
 	if(!curNavExist){
 		return false
 	}
@@ -500,23 +558,35 @@ let getCurNavData = async (config, ctx, next) => {
 	let navData = createNavResult.arr;
 
 	let tabList = [];
-	let childrenType = await otherColl.find({parent_id: newNid, display: true, type: "nav_type"}).toArray();
+	let childrenType = await otherColl.find({parent_id: newNid, display: true, type: "nav_type", nav_type: 'video'}).toArray();
 	let qArr = [];
 	for(let arg of childrenType){
 		qArr.push(arg._id);
 	}
 	let noChildVideo = childrenType.length ? await videoInfoColl.find({video_type: {$in: qArr}}).count() : false;
 	if(!childrenType.length || !noChildVideo){
+
+		// 置顶数据 + 普通数据
+		let topCurNavList = await videoInfoColl.find({popular: true, display: true, video_type: newNid}).sort({rel_time: -1, video_rate: -1, update_time: -1}).limit(36).toArray();
+		let spacing = 36 - topCurNavList.length;
+		let curNavList = (spacing !== 0) ? await videoInfoColl.find({popular: false, display: true, video_type: newNid}).sort({rel_time: -1, video_rate: -1, update_time: -1}).limit(spacing).toArray() : [];
+
 		tabList.push({
 			_id: curNavExist._id,
 			name: curNavExist.name,
 			parent_id: nid,
 			seo: curNavExist.seo,
-			list: await videoInfoColl.find({video_type: newNid}).sort({rel_time: -1, video_rate: -1, update_time: -1}).limit(36).toArray()
+			list: topCurNavList.concat(curNavList)
 		})
 	}else{
 		for(let arg of childrenType){
-			let list = await videoInfoColl.find({video_type: arg._id}).sort({rel_time: -1, video_rate: -1, update_time: -1}).limit(12).toArray();
+			// let list = await videoInfoColl.find({video_type: arg._id}).sort({rel_time: -1, video_rate: -1, update_time: -1}).limit(12).toArray();
+
+			let topCurNavList = await videoInfoColl.find({popular: true, display: true, video_type: arg._id}).sort({rel_time: -1, video_rate: -1, update_time: -1}).limit(12).toArray();
+			let spacing = 12 - topCurNavList.length;
+			let curNavList = (spacing !== 0) ? await videoInfoColl.find({popular: false, display: true, video_type: arg._id}).sort({rel_time: -1, video_rate: -1, update_time: -1}).limit(spacing).toArray() : [];
+			let list = topCurNavList.concat(curNavList);
+
 			if(list.length){
 				tabList.push({
 					_id: arg._id,
@@ -536,15 +606,234 @@ let getCurNavData = async (config, ctx, next) => {
 			description: `${curNavExist.seo.description}`,
 			hostName: ctx.protocols + '://' + ctx.host,
 		},
+		mealList: await otherColl.find({type: 'advert', shape: 'web'}).toArray(),
 		isLogin: JSON.stringify(ctx.session1) !== '{}' ? true : false,
 		isOpenSwiper: !!isSwiperLen,
-		swiperList: (!!isSwiperLen) ? await videoInfoColl.find({display: true, popular: true, video_type: {$in: allChild}}).toArray() : [],
+		swiperList: (!!isSwiperLen) ? await videoInfoColl.find({display: true, openSwiper: true, video_type: {$in: allChild}}).sort({rel_time: -1, video_rate: -1, update_time: -1}).toArray() : [],
 		footer: config.footerInfo.replace(/\n/, '<br />'),
 		nav: navData,
-		tabList: tabList
+		tabList: tabList,
+		publicCode: config.publicCode,
 	}
 	return data
 }
+// 对文章的子分类进行选择
+let setArtChildNav = (child, aId) => {
+	for(let arg of child){
+		if(arg._id.toString() === aId){
+			arg.active = true;
+		}
+	}
+	return child
+}
+// 单个文章分类
+let getCurArtData = async (config, ctx, next) => {
+
+	let artInfoColl = getDB().collection('article_info');
+	let videoInfoColl = getDB().collection('video_info');
+	let otherColl = getDB().collection('other');
+
+	let { page=1 } = ctx.query;
+
+	page = Number(page);
+	page = !page || page < 1 || page === Infinity ? 1 : page;
+
+	let isSwiperLen = 0;
+	if(config.openSwiper){
+		isSwiperLen = await artInfoColl.find({openSwiper: true, display: true}).count();
+	}
+
+	let aid = ctx.params.aid;
+	let newNid = new ObjectID(aid);
+
+	let curNavExist = (aid && aid.length === 24) ? await otherColl.findOne({_id: newNid, type: "nav_type", nav_type: 'article', display: true}) : false;
+	if(!curNavExist){
+		return false
+	}
+
+	// 判断是否是文章分类的 一级分类，或者二级分类
+	let top_parent_id = curNavExist.parent_id ? curNavExist.parent_id : newNid;
+
+	// 全部导航
+	let allNav = await otherColl.find({type: 'nav_type', parent_id: false, display: true}).sort({index: 1}).toArray();
+	let createNavResult = createNavType(allNav, top_parent_id.toString());
+	let navData = createNavResult.arr;
+
+	let childrenType = await otherColl.find({parent_id: newNid, display: true, type: "nav_type", nav_type: 'article'}).toArray();
+	// 当前主分类
+	let qArr = [curNavExist._id];
+	for(let arg of childrenType){
+		qArr.push(arg._id);
+	}
+	let videoList = await videoInfoColl.find({display: true}).sort({update_time: -1}).limit(10).toArray();
+	let articleList = await artInfoColl.find({display: true}).sort({update_time: -1}).limit(10).toArray();
+	// let tabList = await artInfoColl.find({display: true, openSwiper: false, article_type: {$in: qArr}}).skip((page ? page-1 : 0) * 10).limit(10).toArray();
+	// let popularList = await artInfoColl.find({display: true, openSwiper: true, article_type: {$in: qArr}}).skip((page ? page-1 : 0) * 10).limit(10).toArray();
+	let getPipeline = (openSwiper) => {
+		return [
+			{
+		        $match: {
+		        	display: true,
+		        	openSwiper: openSwiper,
+		        	article_type: {
+		        		$in: qArr
+		        	}
+		        }
+		    },
+		    {
+		    	$sort: {
+		    		_id: -1
+		    	}
+		    },
+		    {
+		    	$skip: (page ? page-1 : 0) * 10
+		    },
+		    {
+		    	$limit: 10
+		    },
+		    {
+		        $lookup: {
+		            from: "other",                   // 关联的表 名称
+		            localField: "article_type",        // 当前表的字段 需要关联到目标表
+		            foreignField: "_id",             // 目标表和当前表字段对应的字段
+		            as: "type"                       // 输出的字段
+		        }
+		    },
+		    {
+				$unwind: "$type"
+			},
+			{
+				$project: {
+					_id: 1,
+					"articleTitle" : 1,
+				    "articleImage" : 1,
+				    "poster" : 1,
+				    "article_type" : '$type.name',
+				    "introduce" : 1,
+				    "update_time" : 1,
+				    "popular" : 1,
+				    "allow_reply" : 1,
+				    "openSwiper" : 1,
+				    "display" : 1
+				}
+			}
+		]
+	}
+	let yesSwiperPipe = getPipeline(true);
+	let noSwiperPipe = getPipeline(false);
+	let tabList = await artInfoColl.aggregate(yesSwiperPipe).toArray();
+	let popularList = await artInfoColl.aggregate(noSwiperPipe).toArray();
+	let allTabList = popularList.concat(tabList);
+
+	// 当前主分类所属的所有子分类
+	let allChildren = await otherColl.find({parent_id: top_parent_id, display: true, type: "nav_type", nav_type: 'article'}).toArray();
+	let isParentEl = curNavExist.parent_id ? await otherColl.findOne({_id: curNavExist.parent_id}) : false;
+	// 全部当前分类下的子分类+当前主分类
+	let allCurTypeNav = !curNavExist.parent_id ? [curNavExist].concat(allChildren) : [isParentEl].concat(allChildren);
+
+	let data = {
+		meta: {
+			title: `${curNavExist.name} - ${config.websiteName}`,
+			keywords: `${curNavExist.seo.keywords}`,
+			description: `${curNavExist.seo.description}`,
+			hostName: ctx.protocols + '://' + ctx.host,
+		},
+		mealList: await otherColl.find({type: 'advert', shape: 'web'}).toArray(),
+		isLogin: JSON.stringify(ctx.session1) !== '{}' ? true : false,
+		isOpenSwiper: !!isSwiperLen,
+		swiperList: (!!isSwiperLen) ? await artListResult.find({display: true, openSwiper: true, article_type: {$in: qArr}}).sort({update_time: -1}).toArray() : [],
+		footer: config.footerInfo.replace(/\n/, '<br />'),
+		childNav: setArtChildNav(allCurTypeNav, aid),
+		nav: navData,
+		curType: curNavExist,
+		articleResult: {
+			list: allTabList,
+			total: await artInfoColl.find({display: true}).count(),
+			page: page
+		},
+		videoTop: videoList,
+		articleTop: articleList,
+		publicCode: config.publicCode,
+	}
+	return data
+}
+// 获取单个文章详细信息
+let getCurArtInfo = async (config, ctx, next) => {
+
+	let artInfoColl = getDB().collection('article_info');
+	let artListColl = getDB().collection('article_list');
+	let videoInfoColl = getDB().collection('video_info');
+	let otherColl = getDB().collection('other');
+
+	let aid = ctx.params.aid;
+	let newAid = new ObjectID(aid)
+
+	let curArtExist = (aid && aid.length === 24) ? await artInfoColl.findOne({_id: newAid, display: true}) : false;
+	if(!curArtExist){
+		return false
+	}
+
+	// 判断是否是文章分类的 一级分类，或者二级分类
+	let curArtType = await otherColl.findOne({_id: curArtExist.article_type});
+
+	// 改字段，当前文章的type关联找到的type
+	curArtExist.article_type = curArtType.name;
+
+	// 改字段，关联文章正文
+	let artConResult = await artListColl.findOne({aid: newAid});
+	curArtExist.content = artConResult ? artConResult.text : '暂无内容';
+
+	// 找到当前文章所属的顶级导航分类
+	let top_parent_id = curArtType.parent_id ? curArtType.parent_id : curArtType._id;
+
+	// 全部导航
+	let allNav = await otherColl.find({type: 'nav_type', parent_id: false, display: true}).sort({index: 1}).toArray();
+	let createNavResult = createNavType(allNav, top_parent_id.toString());
+	let navData = createNavResult.arr;
+
+	// 推荐视频，推荐文章，相关文章
+	let videoList = await videoInfoColl.find({display: true}).sort({update_time: -1}).limit(10).toArray();
+	let articleList = await artInfoColl.find({display: true}).sort({update_time: -1}).limit(10).toArray();
+	let likeMovie = await videoInfoColl.find({display: true, _id: {$in: curArtExist.video_id}}).sort({update_time: -1}).limit(10).toArray();
+
+	// 上一条，下一条
+	let prveInfo = await artInfoColl.find({_id: {$lt: newAid}}).sort({_id: -1}).limit(1).toArray();
+	let nextInfo = await artInfoColl.find({_id: {$gt: newAid}}).sort({_id: 1}).limit(1).toArray();
+
+	// 当前主分类所属的所有子分类
+	let allChildren = await otherColl.find({parent_id: top_parent_id, display: true, type: "nav_type", nav_type: 'article'}).toArray();
+	let isParentEl = curArtType.parent_id ? await otherColl.findOne({_id: curArtType.parent_id}) : false;
+	// 全部当前分类下的子分类+当前主分类
+	let allCurTypeNav = !curArtType.parent_id ? [curArtType].concat(allChildren) : [isParentEl].concat(allChildren);
+
+	let data = {
+		meta: {
+			title: `${curArtExist.articleTitle} - ${curArtType.name} - ${config.websiteName}`,
+			keywords: curArtType.seo.keywords,
+			description: curArtExist.introduce,
+			hostName: ctx.protocols + '://' + ctx.host,
+		},
+		mealList: await otherColl.find({type: 'advert', shape: 'web'}).toArray(),
+		isLogin: JSON.stringify(ctx.session1) !== '{}' ? true : false,
+		footer: config.footerInfo.replace(/\n/, '<br />'),
+		childNav: setArtChildNav(allCurTypeNav, curArtType._id.toString()),
+		nav: navData,
+		curType: curArtType,
+		allowReply: (!config.allowReply || !curArtExist.allow_reply) ? false : true,
+		articleResult: {
+			perv: prveInfo ? prveInfo[0] : false,
+			cur: curArtExist,
+			next: nextInfo ? nextInfo[0] : false,
+		},
+		likeMovie: likeMovie,
+		videoTop: videoList,
+		articleTop: articleList,
+		publicCode: config.publicCode,
+	}
+	return data
+
+}
+
 
 
 
@@ -607,10 +896,12 @@ let getChildrenReply = async (coll, pid, vid, page) => {
 	return children
 }
 // 评价接口
-let getVideoMsgList = async (ctx, next) => {
+let getMessageList = async (ctx, next) => {
 
 	ctx.set('Content-Type', 'application/json');
 	let { _id, pid=false, page=1 } = ctx.request.body;
+	page = Number(page);
+	page = !page || page < 1 || page === Infinity ? 1 : page;
 
 	if(!_id || _id.length !== 24){
 		return ctx.body = {
@@ -728,27 +1019,46 @@ function filterXSS(str) {
 let submitMessage = async (ctx, next) => {
 
 	ctx.set('Content-Type', 'application/json');
-	let { vid="", pid=false, wid=false, text=false } = ctx.request.body;
+	let { vid="", pid=false, wid=false, text=false, type="video" } = ctx.request.body;
 	let msgColl = getDB().collection('message');
 	let confColl = getDB().collection('config');
 	let videoColl = getDB().collection('video_info');
+	let artColl = getDB().collection('article_info');
 	let config = await confColl.findOne({});
+
+	// 是否登录
+	if(!ctx.session1.user){
+		let promise = Promise.reject();
+		return await setResponse(ctx, promise, {
+			error: '搞我？没登录就想留言？'
+		})
+	}
 
 	// 网站禁止留言
 	if(!config.allowReply){
 		let promise = Promise.reject();
 		return await setResponse(ctx, promise, {
-			error: '本网站已经禁止了留言功能！'
+			error: '网站已经禁止了留言功能！'
 		})
 	}
 	// 本视频禁止留言
 	vid = new ObjectID(vid);
-	let curVideoInfo = await videoColl.findOne({_id: vid});
-	if(!curVideoInfo.allow_reply){
-		let promise = Promise.reject();
-		return await setResponse(ctx, promise, {
-			error: '本视频已经禁止了留言功能！'
-		})
+	if(type="video"){
+		let curVideoInfo = await videoColl.findOne({_id: vid});
+		if(!curVideoInfo.allow_reply){
+			let promise = Promise.reject();
+			return await setResponse(ctx, promise, {
+				error: '该视频已经禁止了留言功能！'
+			})
+		}
+	}else if(type="article"){
+		let curArtInfo = await artColl.findOne({_id: vid});
+		if(!curArtInfo.allow_reply){
+			let promise = Promise.reject();
+			return await setResponse(ctx, promise, {
+				error: '该文章已经禁止了留言功能！'
+			})
+		}
 	}
 	// 视频vid不符合要求
 	if(vid.toString().length !== 24){
@@ -1013,11 +1323,13 @@ module.exports = {
 	// 通用方法
 	createNavType,
 	getVideoDetill,
+	getCurArtData,
 	getTypesData,
 	getCurNavData,
 	getSearchData,
+	getCurArtInfo,
 	// 通用路由
-	getVideoMsgList,
+	getMessageList,
 	submitMessage,
 	userLogin,
 	loginOut,

@@ -1,1 +1,17 @@
-{"file":"app.js","name":"豆瓣电影评分采集","alias":"douban-dy","state":false,"timeout":43200000,"domain":"https://movie.douban.com/j/new_search_subjects?sort=U&range=0,10&tags=%E7%94%B5%E5%BD%B1"}
+{
+	"file": "app.js",
+	"name": "豆瓣电影评分",
+	"note": "豆瓣电影评分采集，豆瓣限制访问频率，每五分钟访问一次。",
+	"alias": "douban-dy",
+	"state": false,
+	"timeout": 10800000,
+	"pid": 0,
+	"runTime": "",
+	"options": {
+		"domain": {
+			"key": "采集接口",
+			"type": "string",
+			"val": "https://movie.douban.com/j/new_search_subjects?sort=U&range=0,10&tags=%E7%94%B5%E5%BD%B1"
+		}
+	}
+}

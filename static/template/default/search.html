@@ -38,7 +38,7 @@
 							<!-- pc导航栏 -->
 							<div class="pc-nav">
 								<% nav.forEach((item, index) => { %>
-								<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+								<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 								<% }) %>
 							</div>
 							<!--  -->
@@ -118,12 +118,28 @@
 				<!-- mobile导航栏 -->
 				<div class="mobile-nav ov-x-a ov-y-h" style="white-space: nowrap">
 					<% nav.forEach((item, index) => {  %>
-					<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+					<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 					<% }) %>
 				</div>
 				<!--  -->
 			</div>
 		</div>
+		<!-- 广告 -->
+		<% if(mealList.length){ %>
+		<div class="container column-margin">
+			<div class="card pl10 pr10 pb10 pt10">
+				<div>
+					<% mealList.forEach((item) => {  %>
+					<div>
+						<a href="<%= item.link %>">
+							<img style="max-width: 100%;" src="<%= item.path %>" alt="" />
+						</a>
+					</div>
+					<% }) %>
+				</div>
+			</div>
+		</div>
+		<% } %>
 		<!-- 搜索结果 -->
 		<div class="column-margin container cart-item">
 			<div class="card pl10 pr10 pb10 pt10">
@@ -131,7 +147,8 @@
 					<i class="fa fa-film"></i>
 					<span>与 “<strong style="color: #f50505;" v-html="searchName"></strong>” 相关的影片</span>
 				</div>
-				<div v-if="searchResult.list.length" class="mt10">
+				<% if(searchResult.list.length){ %>
+				<div class="mt10">
 					<div v-for="item in searchResult.list" class="link pub-flex pub-ai-center row-col detill-info pub-ai-start">
 						<div class="detill-cover">
 							<a :href="'<%= meta.hostName %>/play/' + item._id + '.html'" class="row-item pr lazy" :style="{backgroundImage: 'url(' + item.videoImage + ')'}">
@@ -181,15 +198,16 @@
 							<el-pagination
 								background
 								layout="prev, pager, next"
-								:page-size="10"
-								:current-page="searchResult.page"
-								@current-change="changePage"
-								:total="searchResult.total">
+								v-bind:page-size="10"
+								v-bind:current-page="searchResult.page"
+								v-on:current-change="changePage"
+								v-bind:total="searchResult.total">
 							</el-pagination>
 						</div>
 					</div>
 				</div>
-				<div class="pb20 pt20" v-else>
+				<% }else{ %>
+				<div class="pb20 pt20">
 					<div class="container column-margin cart-item">
 						<div>
 							<div class="text-center pub-flex pub-jc-center pub-ai-center" style="padding: 200px 0;">
@@ -203,6 +221,7 @@
 						</div>
 					</div>
 				</div>
+				<% } %>
 			</div>
 		</div>
 		<!-- 版权 -->
@@ -282,7 +301,7 @@
 		</div>
 		<% } %>
 	</div>
-
+	<!-- 公共js -->
 	<script src="<%= meta.hostName %>/js/public/jquery.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/zui.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/vue.min.js"></script>
@@ -292,17 +311,7 @@
 	<script src="<%= meta.hostName %>/js/public/clipboard.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/public.js"></script>
 	<script src="<%= meta.hostName %>/js/search/search.js"></script>
-
-	<script type="text/javascript" src="https://s9.cnzz.com/z_stat.php?id=1278686399&web_id=1278686399"></script>
-	<script language="javascript" src="http://count44.51yes.com/click.aspx?id=447372028&logo=12" charset="gb2312"></script>
-
-	<script>
-	    (function () {
-	        var id = "2415689770463175004-482";
-	        document.write('<ins style="display:none!important" id="' + id + '"></ins>');
-	        (window.adbyunion = window.adbyunion || []).push(id);
-	    })();
-	</script>
-	<script async defer src="https://js.99tianxin.com/o.js"></script>
+	<!-- 统计，广告等 -->
+	<%- publicCode %>
 </body>
 </html>

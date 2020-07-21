@@ -38,7 +38,7 @@
 							<!-- pc导航栏 -->
 							<div class="pc-nav">
 								<% nav.forEach((item, index) => { %>
-								<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+								<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 								<% }) %>
 							</div>
 							<!--  -->
@@ -118,12 +118,28 @@
 				<!-- mobile导航栏 -->
 				<div class="mobile-nav ov-x-a ov-y-h" style="white-space: nowrap">
 					<% nav.forEach((item, index) => {  %>
-					<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+					<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 					<% }) %>
 				</div>
 				<!--  -->
 			</div>
 		</div>
+		<!-- 广告 -->
+		<% if(mealList.length){ %>
+		<div class="container column-margin">
+			<div class="card pl10 pr10 pb10 pt10">
+				<div>
+					<% mealList.forEach((item) => {  %>
+					<div>
+						<a href="<%= item.link %>">
+							<img style="max-width: 100%;" src="<%= item.path %>" alt="" />
+						</a>
+					</div>
+					<% }) %>
+				</div>
+			</div>
+		</div>
+		<% } %>
 		<!-- 详细 -->
 		<div class="container column-margin cart-item">
 			<div class="card pl10 pr10 pt10 pb10">
@@ -176,7 +192,7 @@
 						</div>
 					</div>
 					<div class="text-left pl10 pr10 mt10">
-						<el-tabs v-model="tabName" @tab-click="changeTabItem">
+						<el-tabs v-model="tabName" v-on:tab-click="changeTabItem">
 					    	<el-tab-pane label="按时间" name="_id"></el-tab-pane>
 					    	<el-tab-pane label="按人气" name="rate"></el-tab-pane>
 					  	</el-tabs>
@@ -210,10 +226,10 @@
 							<el-pagination
 								background
 								layout="prev, pager, next"
-								:page-size="36"
-								:current-page="curPage"
-								@current-change="changePage"
-								:total="content.total">
+								v-bind:page-size="36"
+								v-bind:current-page="curPage"
+								v-on:current-change="changePage"
+								v-bind:total="content.total">
 							</el-pagination>
 						</div>
 					</div>
@@ -297,7 +313,7 @@
 		</div>
 		<% } %>
 	</div>
-
+	<!-- 公共js -->
 	<script src="<%= meta.hostName %>/js/public/jquery.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/vue.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/zui.min.js"></script>
@@ -307,17 +323,7 @@
 	<script src="<%= meta.hostName %>/js/public/clipboard.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/public.js"></script>
 	<script src="<%= meta.hostName %>/js/type/type.js"></script>
-
-	<script type="text/javascript" src="https://s9.cnzz.com/z_stat.php?id=1278686399&web_id=1278686399"></script>
-	<script language="javascript" src="http://count44.51yes.com/click.aspx?id=447372028&logo=12" charset="gb2312"></script>
-
-	<script>
-	    (function () {
-	        var id = "2415689770463175004-482";
-	        document.write('<ins style="display:none!important" id="' + id + '"></ins>');
-	        (window.adbyunion = window.adbyunion || []).push(id);
-	    })();
-	</script>
-	<script async defer src="https://js.99tianxin.com/o.js"></script>
+	<!-- 统计，广告等 -->
+	<%- publicCode %>
 </body>
 </html>

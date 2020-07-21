@@ -1,9 +1,9 @@
-const getDB = require('../../utils/baseConnect');
 const path = require('path');
 const fse = require('fs-extra');
 const axios = require('axios');
 const iconv = require('iconv-lite');
 const { ObjectID } = require('mongodb');
+const { MongoClass } = require('../../utils/mongo');
 const Entities = require('html-entities').XmlEntities;
 const entitiesCode = new Entities();
 const { mixinsScriptConfig, getBjDate, dateStringify } = require('../../utils/tools')
@@ -11,6 +11,9 @@ const { mixinsScriptConfig, getBjDate, dateStringify } = require('../../utils/to
 // 封装一手request方法
 async function http(url){
 	return new Promise((resolve, reject) => {
+		setTimeout(() => {
+			resolve(undefined)
+		}, 3000);
 		axios({
 			method: 'GET',
 			url: url,
@@ -48,7 +51,7 @@ let getVideoListData = async (conf, videoInfoColl, confColl) => {
 
 					setTimeout(async () => {
 
-						let body = await http(`${conf.domain}&start=${i}&year_range=${curYear},${curYear}`);
+						let body = await http(`${conf.options.domain.val}&start=${i}&year_range=${curYear},${curYear}`);
 
 						if(body && body.data && body.data.length){
 							return res(body.data);
@@ -91,7 +94,7 @@ let getVideoListData = async (conf, videoInfoColl, confColl) => {
 				})
 				.catch((err) => {
 					console.log(err);
-					console.log(`列表页无内容，地址：${conf.domain}&start=${i}&year_range=${curYear},${curYear}`);
+					console.log(`列表页无内容，地址：${conf.options.domain.val}&start=${i}&year_range=${curYear},${curYear}`);
 				})
 
 			}
@@ -100,7 +103,7 @@ let getVideoListData = async (conf, videoInfoColl, confColl) => {
 	}
 }
 // 导出
-let mainFn = async () => {
+let mainFn = async (DB) => {
 	// 如果正在运行，直接退出，确保安全
 	let curConfPath = path.resolve(__dirname, './config.json');
 	let runConf = fse.readJsonSync(curConfPath);
@@ -109,25 +112,25 @@ let mainFn = async () => {
 	}
 	// 箭头函数 与 promise = 狗币
 	return new Promise(async (resolve, reject) => {
-		// 开始采集
-		mixinsScriptConfig('douban-dy', {state: true});
-		// 获取脚本的配置 域名
-		let confPath = path.resolve(__dirname, './config.json')
-		let config = await fse.readJson(confPath).catch(err => {
-			reject(new Error('发生错误，位置：读取当前教程config文件'))
-		});
-		console.log(`开始时间 ${dateStringify()}`);
+
+		let config = runConf
 
 	   	// 最大采集时间
 	   	setTimeout(() => {
 	   		reject();
 	   	}, config.timeout);
 	   	// 正常
-	   	let videoInfoColl = getDB().collection('video_info');
-	   	let confColl = getDB().collection('config');
+	   	let videoInfoColl = DB.collection('video_info');
+	   	let confColl = DB.collection('config');
 
+	   	let configData = await confColl.findOne({}); //
+		let isBJtime = configData.isBjTime;          //
+
+	   	// 开始采集 => 配置中保存当前子进程的pid，用于手动停止
+	   	// 开始采集 => 保存当前运行脚本时间
+	   	// 开始采集 => 脚本状态设置为已启动
+	   	mixinsScriptConfig('douban-dy', {state: true, pid: process.pid, runTime: dateStringify(isBJtime)});
 	   	await getVideoListData(config, videoInfoColl, confColl);
-	   	console.log(`结束时间 ${dateStringify()}`);
 	   	console.log('采集完成！');
 
 		resolve();
@@ -143,4 +146,5 @@ let mainFn = async () => {
 		process.exit();
 	})
 }
-mainFn();
+// mainFn();
+MongoClass(mainFn)

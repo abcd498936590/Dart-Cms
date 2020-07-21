@@ -23,7 +23,7 @@
 			    headers: {
 			    	'Content-Type': 'application/json'
 			    },
-			    url : '/web/userRegister',
+			    url : '/public/userRegister',
 			    data : JSON.stringify(paramData),
 			    dataType : 'json',
 			    success : function(data){
@@ -42,7 +42,7 @@
 			$.ajax({
 			    type: 'POST',
 			    async: true,
-			    url : '/web/userLogin',
+			    url : '/public/userLogin',
 			    data : JSON.stringify(paramData),
 			    headers: {
 			    	'Content-Type': 'application/json'
@@ -89,7 +89,7 @@
 		$.ajax({
 		    type: 'POST',
 		    async: true,
-		    url : '/web/loginOut',
+		    url : '/public/loginOut',
 		    headers: {
 		    	'Content-Type': 'application/json'
 		    },
@@ -238,7 +238,7 @@ $(document).ready(function(){
 	        }
 		});
 		goTopBtn.click(function(ev){
-			$('body,html').animate({scrollTop: 0}, 600)
+			$('body,html').animate({scrollTop: 0}, 300)
 		});
 	})();
 	// 分享
@@ -263,7 +263,7 @@ $(document).ready(function(){
 		}, 0);
 	})();
 	// jquery lazy
-	$("a.lazy").lazyload({effect: "fadeIn"});
+	$(".lazy").lazyload({effect: "fadeIn"});
 	// swiper init
 	;(function(){
 		var isOpenSwiper = $('#swiper-box').length;

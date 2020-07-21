@@ -18,6 +18,9 @@ h1,h2,h3,h4,h5,h5,p{
 a{
 	text-decoration: none;
 }
+.normal{
+	font-weight: normal;
+}
 .pointer{
 	cursor: pointer!important;
 }
@@ -437,6 +440,7 @@ a{
 }
 .popular .pop-item .type{
 	color: #999;
+	max-width: 80px;
 }
 /*留言*/
 .msg-row{

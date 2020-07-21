@@ -5,6 +5,7 @@ let route = new Router();
 let {
 	GetScriptList,
 	RunScript,
+	StopRunScript,
 	RemoveScript,
 	UploadScript,
 	UpdateScript,
@@ -15,6 +16,8 @@ let {
 route.get('/script/getScriptList', GetScriptList);
 // 执行脚本  脚本开始便不受控制，node无法跨线程停止掉
 route.post('/script/runScript', RunScript);
+// 停止脚本
+route.post('/script/stopRunScript', StopRunScript);
 // 删除脚本
 route.post('/script/removeScript', RemoveScript);
 // 上传脚本

@@ -1,6 +1,6 @@
 const Koa = require('koa');
 const path = require('path');
-const static = require('koa-static');
+const staticCache = require('koa-static-cache')
 const Router = require('koa-router');
 const body = require('koa-body');
 const bodyParser = require('koa-bodyparser');
@@ -19,8 +19,13 @@ const sessionConfig = require('./utils/config').project;
 
 // 后台管理系统-接口
 const manageRouter = require('./router/manage');
+// 前台 app + web 通用路由
+const publicRouter = require('./router/public');
 // 前台页面系统-路由
 const webRouter = require('./router/web');
+// app端接口-接口
+const appRouter = require('./router/app');
+
 
 
 // 前置中间件-获取用户ip，并且加工成可以使用的ipv4
@@ -29,6 +34,10 @@ const filterUserIp = require('./middleware/userIp');
 const routerCorrect = require('./middleware/router');
 // 前置中间件-检测是否关闭了网站
 const webService = require('./middleware/service');
+// 前置中间件-用于处理纯静态化路径
+const openStatic = require('./middleware/static');
+// 前置中间件-用于修正静态化后没有找到的文件路径，恢复原路径
+const cacheCorrect = require('./middleware/cacheCorrect');
 
 // gzip
 app.use(compress({
@@ -38,18 +47,27 @@ app.use(compress({
 app.use(webService())
 // 加工用户IP
 app.use(filterUserIp())
+// 纯静态检查
+app.use(openStatic())
 // 模板引擎ejs
 app.use(views(
 	path.resolve(__dirname, './static/template'),
 	{ map: {html: 'ejs' }}
-));
+))
 // 静态文件
-app.use(static(
+app.use(staticCache(
   	path.join( __dirname,  './static'),
   	{
-  		maxage: 2592000000
+  		maxage: 2592000000,
+  		buffer: true,
+  		gzip: true,
+  		dynamic: true,
+  		preload: false,
+  		usePrecompiledGzip: true
   	}
 ))
+// 矫正静态化以后，没有找到的文件，路由回正，走查询数据库
+app.use(cacheCorrect())
 // 参数解析
 app.use(bodyParser());
 // session cookie
@@ -72,17 +90,27 @@ app.use(tokenStore({
 
 // 页面系统 路由
 app.use(webRouter.routes());
+// 前台 web + app 通用路由
+app.use(publicRouter.routes());
 // 管理系统 路由
 app.use(manageRouter.routes());
-// 管理系统 路由
+// APP系统 路由
 app.use(appRouter.routes());
 
 
 // url矫正
 app.use(routerCorrect())
 // 静态文件 - 处理矫正后的文件访问路径
-app.use(static(
-  	path.join( __dirname,  './static')
+app.use(staticCache(
+  	path.join( __dirname,  './static'),
+  	{
+  		maxage: 2592000000,
+  		buffer: true,
+  		gzip: true,
+  		dynamic: true,
+  		preload: false,
+  		usePrecompiledGzip: true
+  	}
 ))
 // 静态文件没有找到
 app.use(async (ctx, next) => {
@@ -97,8 +125,16 @@ app.use(async (ctx, next) => {
 	return next()
 })
 // 接404页面
-app.use(static(
-  	path.join( __dirname,  './static')
+app.use(staticCache(
+  	path.join( __dirname,  './static'),
+  	{
+  		maxage: 2592000000,
+  		buffer: true,
+  		gzip: true,
+  		dynamic: true,
+  		preload: false,
+  		usePrecompiledGzip: true
+  	}
 ))
 
 app.listen(9999, () => {

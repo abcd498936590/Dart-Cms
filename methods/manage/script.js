@@ -4,7 +4,9 @@ const fs = require('fs');
 const fse = require('fs-extra');
 const unzip = require("unzip-stream");
 const uuidv4 = require('uuid/v4');
+const os = require('os');
 require('shelljs/global');
+const platform = os.platform();
 //
 const getDB = require('../../utils/baseConnect');
 const authToken = require('../../utils/authToken');
@@ -26,10 +28,13 @@ function readDirSync(pathStr){
 				name: curConf.name,
 				state: curConf.state,
 				alias: curConf.alias,
-				domain: curConf.domain,
+				note: curConf.note,
 				file: curConf.file,
 				timeout: curConf.timeout,
 				stateName: curConf.state ? "运行中" : "空闲",
+				state: curConf.state,
+				runTime: curConf.runTime,
+				options: curConf.options,
 			})
 		}
 	})
@@ -60,16 +65,56 @@ let RunScript = async (ctx, next) => {
 
 		let { alias } = ctx.request.body;
 		let scriptPath = path.resolve(__dirname, `../../script/${alias}/app.js`)
-		let promise;
+		let promise,
+		errInfo;
 
 		try{
-			promise = Promise.resolve();
+			let confPath = path.resolve(__dirname, `../../script/${alias}/config.json`);
+			let curScriptConf = await fse.readJson(confPath);
+			if(curScriptConf.state){
+				errInfo = '脚本正在运行，无法启动';
+				throw new Error(errInfo);
+			}
 			exec(`node ${scriptPath}`, {async:true});
+			promise = Promise.resolve();
 		}catch(err){
 			promise = Promise.reject();
 		}
 
-		await setResponse(ctx, promise);
+		await setResponse(ctx, promise, {
+			error: errInfo
+		});
+
+	}, {admin: true}, {insRole: true, childrenKey: 'runScript', parentKey: 'script'})
+
+}
+// 停止脚本
+let StopRunScript = async (ctx, next) => {
+
+	await authToken(ctx, next, async () => {
+
+		let { alias } = ctx.request.body;
+		let scriptConfPath = path.resolve(__dirname, `../../script/${alias}/config.json`);
+		let curScriptConf = fse.readJsonSync(scriptConfPath);
+		let promise;
+
+		// 是否正在运行
+		if(curScriptConf.state){
+			try{
+				let command = platform === 'linux' ? `kill -9 ${curScriptConf.pid}` : `taskkill -PID ${curScriptConf.pid} -F`;
+				exec(command);
+				mixinsScriptConfig(alias, {state: false, pid: 0});
+				promise = Promise.resolve();
+			}catch(err){
+				console.log('脚本停止运行时，发生错误！');
+			}
+		}else{
+			promise = Promise.reject();
+		}
+		await setResponse(ctx, promise, {
+			success: '脚本已经停止运行，请刷新查看状态',
+			error: !curScriptConf.state ? '脚本空闲状态，无须停止' : '操作失败'
+		});
 
 	}, {admin: true}, {insRole: true, childrenKey: 'runScript', parentKey: 'script'})
 
@@ -79,8 +124,8 @@ let UpdateScript = async (ctx, next) => {
 
 	await authToken(ctx, next, async () => {
 
-		let { alias, name, domain, timeout } = ctx.request.body;
-		let mixins = { name, domain, timeout };
+		let { alias, name, timeout, options } = ctx.request.body;
+		let mixins = { name, timeout, options };
 		let promise = mixinsScriptConfig(alias, mixins) ? Promise.resolve() : Promise.reject();
 
 		await setResponse(ctx, promise, {
@@ -139,5 +184,6 @@ module.exports = {
 	RemoveScript,
 	UpdateScript,
 	RunScript,
+	StopRunScript,
 	GetScriptList,
 }

@@ -19,8 +19,11 @@ let ExecDataBackup = async (ctx, next) => {
 
 	await authToken(ctx, next, async () => {
 
+		let confColl = getDB().collection('config');
+		let config = await confColl.findOne({});
+		let isBJtime = config.isBjTime;
 		let promise,
-		interimList = dateStringify().replace(/-| |:/g, '');
+		interimList = dateStringify(isBJtime).replace(/-| |:/g, '');
 		let { all=false } = ctx.request.body;
 
 		try{
@@ -56,7 +59,7 @@ let ExecDataBackup = async (ctx, next) => {
 			await backupColl.insertOne({
 				name: `${interimList}.zip`,
 				type: 'backup',
-				date: dateStringify()
+				date: dateStringify(isBJtime)
 			})
 			// 删除临时文件夹
 			await fse.remove(`${backupPath}`);

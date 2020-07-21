@@ -117,7 +117,7 @@
 							</div>
 						</div>
 						<div v-else class="row-col mt10" style="border-top: 1px solid #ddd;">
-							<p class="text-center pt10">该视频已经禁用评价系统！</p>
+							<p class="text-center pt10">评价系统已经禁用！</p>
 						</div>
 					</div>
 				</div>
@@ -127,6 +127,7 @@
 			return {
 				allowReply: false,
 				vid: "",
+				type: "video",
 				lock: false,
 				loading: false,
 				sub_loading: false,
@@ -156,6 +157,7 @@
 				var jsonData = {
 					text: this.msg_text,
 					vid: this.vid,
+					type: this.type
 				}
 				if(this.is_reply){
 					jsonData['pid'] = this.target['pid'];
@@ -167,7 +169,7 @@
 				$.ajax({
 				    type: 'POST',
 				    async: true,
-				    url : '/web/submitMessage',
+				    url : '/public/submitMessage',
 				    data : JSON.stringify(jsonData),
 				    headers: {
 				    	'Content-Type': 'application/json'
@@ -247,13 +249,14 @@
 				var jsonData = JSON.stringify({
 			    	_id: This.vid,
 			    	pid: pid,
-			    	page: page
+			    	page: page,
+			    	type: This.type
 			    })
 			    this.loading = true;
 				$.ajax({
 				    type: 'POST',
 				    async: true,
-				    url : '/web/getVideoMsgList',
+				    url : '/public/getMessageList',
 				    data : jsonData,
 				    headers: {
 				    	'Content-Type': 'application/json'
@@ -283,6 +286,7 @@
 			this.isLogin = objInfo.isLogin;
 			this.vid = objInfo.videoId;
 			this.allowReply = objInfo.allowReply;
+			this.type = this.type;
 
 		},
 		mounted: function(){

@@ -1,17 +1,20 @@
-const getDB = require('../../utils/baseConnect');
 const path = require('path');
 const fse = require('fs-extra');
 const axios = require('axios');
 const iconv = require('iconv-lite');
 const { ObjectID } = require('mongodb');
+const { MongoClass } = require('../../utils/mongo');
 const Entities = require('html-entities').XmlEntities;
 const to_json = require('xmljson').to_json;
 const entitiesCode = new Entities();
-const { mixinsScriptConfig, getBjDate } = require('../../utils/tools')
+const { mixinsScriptConfig, getBjDate, dateStringify } = require('../../utils/tools')
 
 // 封装一手request方法
 async function http(url){
 	return new Promise((resolve, reject) => {
+		setTimeout(() => {
+			resolve(undefined)
+		}, 3000);
 		axios({
 			method: 'GET',
 			url: url,
@@ -33,43 +36,67 @@ async function http(url){
 	})
 }
 // 源管理
-let sourceManage = async (sJson, sName, videoListColl, pid, config) => {
-
-	let sourceNameArr = sName.split(',');
-	if(sourceNameArr.length === 1){
-		sJson['0'] = sJson;
-	}
-
-	for(let [index, arg] of sourceNameArr.entries()){
-
-		let curSourceStr = sJson[index]['_'];
-		// 是否当前源字符串存在
-		if(curSourceStr){
-			let curSourceList = curSourceStr.replace(/\$/g, '$' + config.analysis);
-			let playList = curSourceList.split(/#/g);
-			let isExistSource = await videoListColl.findOne({vid: pid, z_name: `mrzy-${arg}`});
-			if(isExistSource){
-				let updateSource = {
-				    "list" : playList
-				}
-				await videoListColl.updateOne({vid: pid, z_name: `mrzy-${arg}`}, {$set: updateSource})
-			}else{
-				let curSourceLen = await videoListColl.find({vid: pid}).count();
-				let sourceInfo = {
-				    "index" : curSourceLen + 1,
-				    "name" : arg,
-				    "z_name" : `mrzy-${arg}`,
-				    "type" : "iframe",
-				    "list" : playList,
-				    "vid" : pid,    // insertResult.insertedId
-				}
-				await videoListColl.insertOne(sourceInfo);
-			}
+let sourceManage = async (sList, videoListColl, pid, config) => {
+	// 如果源只有一项
+	if(sList['$'] && sList['_']){
+		let obj = sList;
+		sList = {
+			'0': obj
 		}
 	}
+	let map_keys = {
+		qq: '腾讯视频',
+		qiyi: '爱奇艺',
+		youku: '优酷视频',
+		mgtv: '芒果TV',
+		sohu: '搜狐视频',
+		pptv: 'PP视频',
+		letv: '乐视视频'
+	}
+	for(let attr in sList){
+
+		let curItem = sList[attr];
+		try{
+			var itemName = curItem['$']['flag'];
+		}catch(err){
+			continue;
+		}
+
+		// 如果不是数组中的，那么不要
+		if(!map_keys[itemName]){
+			continue;
+		}
+
+		// 如果没有播放源，略过
+		if(!curItem['_']){
+			continue;
+		}
+		let itemSource = curItem['_'].replace(/\$/g, '$' + config.options.analysis.val);
+
+		// 检查z_name是否存在
+		let isExist = await videoListColl.findOne({vid: pid, z_name: itemName});
+		if(isExist){
+			let updateSource = {
+			    "list" : itemSource
+			}
+			await videoListColl.updateOne({vid: pid, z_name: itemName}, {$set: updateSource})
+		}else{
+			let curSourceLen = await videoListColl.find({vid: pid}).count();
+			let sourceInfo = {
+			    "index" : curSourceLen + 1,
+			    "name" : map_keys[itemName],
+			    "z_name" : itemName,
+			    "type" : "iframe",
+			    "list" : itemSource,
+			    "vid" : pid,    // insertResult.insertedId
+			}
+			await videoListColl.insertOne(sourceInfo);
+		}
+	}
+
 }
 // 每一条数据
-let getCurVideoData = async (v_info, sName, conf, videoInfoColl, videoListColl, confColl, otherColl) => {
+let getCurVideoData = async (v_info, conf, videoInfoColl, videoListColl, confColl, otherColl) => {
 
 	let config = confColl.findOne({});
 	// 找到数据
@@ -78,14 +105,14 @@ let getCurVideoData = async (v_info, sName, conf, videoInfoColl, videoListColl, 
 	if(isExist){  // 更新
 
 		let updateInfo = {
-		    "videoImage" : v_info.pic,
+		    // "videoImage" : v_info.pic,
 		    "update_time" : v_info.last,
 		    "remind_tip" : v_info.note,
 		}
 		// 更新信息
 		await videoInfoColl.updateOne({_id: isExist._id}, {$set: updateInfo});
 		// 源管理
-		await sourceManage(v_info.dl.dd, sName, videoListColl, isExist._id, conf);
+		await sourceManage(v_info.dl.dd, videoListColl, isExist._id, conf);
 
 	}else{  // 新增
 
@@ -93,7 +120,7 @@ let getCurVideoData = async (v_info, sName, conf, videoInfoColl, videoListColl, 
 		if(!type_id){
 			return
 		}
-		let v_dir = v_info.director && typeof v_info.director === 'string' ? v_info.director.split(/\/|\s|,|·/g) : [];
+		let v_dir = (v_info.director && typeof v_info.director === 'string') ? v_info.director.split(/\/|\s|,|·|\s/g) : [];
 		let newV_dir = [];
 		for(let arg of v_dir){
 			let val = arg.trim();
@@ -101,7 +128,7 @@ let getCurVideoData = async (v_info, sName, conf, videoInfoColl, videoListColl, 
 				newV_dir.push(val)
 			}
 		}
-		let v_actor = v_info.actor && typeof v_info.actor === 'string' ? v_info.actor.split(/\/|\s|,|·/g) : [];
+		let v_actor = (v_info.actor && typeof v_info.actor === 'string') ? v_info.actor.split(/\/|\s|,|·|\s/g) : [];
 		let newV_actor = [];
 		for(let arg of v_actor){
 			let val = arg.trim();
@@ -127,8 +154,10 @@ let getCurVideoData = async (v_info, sName, conf, videoInfoColl, videoListColl, 
 		    "rel_time" : testYear(v_info.year, config),
 		    "introduce" : v_info.des,
 		    "remind_tip" : v_info.note,
+		    "news_id" : [],
 		    "popular" : false,
 		    "allow_reply" : false,
+		    "openSwiper" : false,
 		    "display" : true,
 		    "scource_sort" : false
 		}
@@ -138,7 +167,7 @@ let getCurVideoData = async (v_info, sName, conf, videoInfoColl, videoListColl, 
 			return
 		}
 		// 源管理
-		await sourceManage(v_info.dl.dd, sName, videoListColl, insertResult.insertedId, conf);
+		await sourceManage(v_info.dl.dd, videoListColl, insertResult.insertedId, conf);
 	}
 
 }
@@ -157,70 +186,49 @@ let testYear = (yStr, config) => {
 	}
 	return yStr
 }
-let getCurVideoInfo = async (id, sName, conf, videoInfoColl, videoListColl, confColl, otherColl) => {
-
-	let bool = true;
-
-	while(bool){
-
-		let body = await http(`${conf.domain}?ac=detail&ids=${id}`);
-
-		if(!body){
-			console.log(`详情页无内容，地址：${conf.domain}?ac=detail&ids=${id}`);
-			continue;
-		}
-
-		let bodys = await new Promise((res, rej)=>{
-	   		to_json(body.data, function (error, data){
-	   			if(error){
-	   				return rej()
-	   			}
-	   			// 正常
-	   			res(data.rss.list.video);
-	   		})
-	   	}).then(async (list) => {
-	   		await getCurVideoData(list, sName, conf, videoInfoColl, videoListColl, confColl, otherColl);
-	   		console.log(`名称： ${list.name}`);
-	   	})
-
-	   	return
-	}
-
-}
 let getVideoListData = async (len, conf, videoInfoColl, videoListColl, confColl, otherColl) => {
 
-	for(var i=0; i<=len; i++){
+
+	for(var i=1; i<=len; i++){
 
 		let bool = true;
 
 		while(bool){
 
-			let body = await http(`${conf.domain}?ac=list&pg=${i+1}`);
+			let body = await http(`${conf.options.domain.val}?ac=videolist&pg=${i}&h=${conf.options.h.val}`);
 			if(!body){
-				console.log(`列表页无内容，地址：${conf.domain}?ac=list&pg=${i+1}`);
+				console.log(`列表页无内容，地址：${conf.options.domain.val}?ac=videolist&pg=${i}&h=${conf.options.h.val}`);
 				continue;
 			}
 			let list = await new Promise((res, rej)=>{
-		   		to_json(body.data, function (error, data){
-		   			if(error){
-		   				return rej()
-		   			}
-		   			// 正常
-		   			res(data.rss.list.video);
-		   		})
-		   	})
+				try{
+			   		to_json(body.data, function (error, data){
+			   			if(error){
+			   				return res(false)
+			   			}
+			   			// 正常
+			   			res(data.rss.list.video);
+			   		})
+				}catch(err){
+					res(false)
+				}
+		   	});
+		   	// 是否页面又错误输出，无法解析
+		   	if(!list){
+		   		continue;
+		   	}
 
 			for(let attr in list){
 				let item = list[attr];
-				await getCurVideoInfo(item.id, item.dt, conf, videoInfoColl, videoListColl, confColl, otherColl);
-				// console.log(`第 ${i+1} 页，共 ${len} 页，第 ${attr+1} 条，名称： ${list[attr].name.trim()}`);
+				await getCurVideoData(item, conf, videoInfoColl, videoListColl, confColl, otherColl);
+				console.log(`第 ${i} 页，共 ${len} 页，第 ${Number(attr)+1} 条，名称： ${list[attr].name.trim()}`);
 			}
 			break;
 		}
 	}
 }
 // 导出
-let mainFn = async () => {
+let mainFn = async (DB) => {
 	// 如果正在运行，直接退出，确保安全
 	let curConfPath = path.resolve(__dirname, './config.json');
 	let runConf = fse.readJsonSync(curConfPath);
@@ -229,15 +237,10 @@ let mainFn = async () => {
 	}
 	// 箭头函数 与 promise = 狗币
 	return new Promise(async (resolve, reject) => {
-		// 开始采集
-		mixinsScriptConfig('mrzy', {state: true});
-		// 获取脚本的配置 域名
-		let confPath = path.resolve(__dirname, './config.json')
-		let config = await fse.readJson(confPath).catch(err => {
-			reject(new Error('发生错误，位置：读取当前教程config文件'))
-		})
+
+		let config = runConf;
 		// 采集源 首页
-		let httpResult = await http(`${config.domain}?ac=list&pg=1`).catch(err => {
+		let httpResult = await http(`${config.options.domain.val}?ac=videolist&h=${config.options.h.val}`).catch(err => {
 	   		reject(new Error('发生错误，位置：首页'))
 	   	});
 	   	// 获取总页码
@@ -260,12 +263,20 @@ let mainFn = async () => {
 	   		reject();
 	   	}, config.timeout);
 	   	// 正常
-	   	let videoInfoColl = getDB().collection('video_info');
-	   	let videoListColl = getDB().collection('video_list');
-	   	let otherColl = getDB().collection('other');
-	   	let confColl = getDB().collection('config');
-	   	let maxPage = httpResult.pagecount;
+	   	let videoInfoColl = DB.collection('video_info');
+	   	let videoListColl = DB.collection('video_list');
+	   	let otherColl = DB.collection('other');
+	   	let confColl = DB.collection('config');
 
+	   	let configData = await confColl.findOne({}); //
+		let isBJtime = configData.isBjTime;          //
+
+	   	let maxPage = Number(httpResult.pagecount);
+
+	   	// 开始采集 => 配置中保存当前子进程的pid，用于手动停止
+	   	// 开始采集 => 保存当前运行脚本时间
+	   	// 开始采集 => 脚本状态设置为已启动
+	   	mixinsScriptConfig('mrzy', {state: true, pid: process.pid, runTime: dateStringify(isBJtime)});
 	   	await getVideoListData(maxPage, config, videoInfoColl, videoListColl, confColl, otherColl);
 	   	console.log('采集完成！');
 
@@ -276,10 +287,12 @@ let mainFn = async () => {
 		// 停止
 		process.exit();
 	}).catch(err => {
+		console.log(err);
 		// 把采集状态 改成 停止
 		mixinsScriptConfig('mrzy', {state: false});
 		// 停止
 		process.exit();
 	})
 }
-mainFn();
+// mainFn();
+MongoClass(mainFn)

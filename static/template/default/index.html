@@ -30,7 +30,7 @@
 						<!-- pc导航栏 -->
 						<div class="pc-nav">
 							<% nav.forEach((item, index) => { %>
-							<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+							<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 							<% }) %>
 						</div>
 						<!--  -->
@@ -110,12 +110,28 @@
 			<!-- mobile导航栏 -->
 			<div class="mobile-nav ov-x-a ov-y-h" style="white-space: nowrap">
 				<% nav.forEach((item, index) => {  %>
-				<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+				<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 				<% }) %>
 			</div>
 			<!--  -->
 		</div>
 	</div>
+	<!-- 广告 -->
+	<% if(mealList.length){ %>
+	<div class="container column-margin">
+		<div class="card pl10 pr10 pb10 pt10">
+			<div>
+				<% mealList.forEach((item) => {  %>
+				<div>
+					<a href="<%= item.link %>">
+						<img style="max-width: 100%;" src="<%= item.path %>" alt="" />
+					</a>
+				</div>
+				<% }) %>
+			</div>
+		</div>
+	</div>
+	<% } %>
 	<!-- 轮播 -->
 	<% if(isOpenSwiper && swiperList.length){ %>
 	<div id="swiper-box" class="container column-margin">
@@ -206,7 +222,7 @@
 										<div class="pop-item pub-flex">
 											<i class="num<% if(index == 0) { %> one<% } else if(index == 1) { %> two<% } else if(index == 2) { %> there<% }%>"><%= index + 1 %></i>
 											<a href="<%= meta.hostName %>/detill/<%= item3._id %>.html" class="name pub-flex1 text-ellipsis word-wrap"><%= item3.videoTitle %></a>
-											<span class="type"><%= item3.remind_tip %></span>
+											<span class="type text-ellipsis word-wrap"><%= item3.remind_tip %></span>
 										</div>
 									</li>
 									<% }) %>
@@ -318,7 +334,7 @@
 		</div>
 	</div>
 	<% } %>
-
+	<!-- 公共js -->
 	<script src="<%= meta.hostName %>/js/public/jquery.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/zui.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/jquery.cookie.min.js"></script>
@@ -327,17 +343,7 @@
 	<script src="<%= meta.hostName %>/js/public/swiper.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/public.js"></script>
 	<script src="<%= meta.hostName %>/js/public/baidu-push.js"></script>
-
-	<script type="text/javascript" src="https://s9.cnzz.com/z_stat.php?id=1278686399&web_id=1278686399"></script>
-	<script language="javascript" src="http://count44.51yes.com/click.aspx?id=447372028&logo=12" charset="gb2312"></script>
-
-	<script>
-	    (function () {
-	        var id = "2415689770463175004-482";
-	        document.write('<ins style="display:none!important" id="' + id + '"></ins>');
-	        (window.adbyunion = window.adbyunion || []).push(id);
-	    })();
-	</script>
-	<script async defer src="https://js.99tianxin.com/o.js"></script>
+	<!-- 统计，广告等 -->
+	<%- publicCode %>
 </body>
 </html>

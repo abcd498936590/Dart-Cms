@@ -94,11 +94,11 @@ let mixinsScriptConfig = async (scriptName, mixins) => {
 }
 
 // 生成时间字符串
-let dateStringify = () => {
+let dateStringify = (isBJTime=false) => {
 	let fill = (d) => {
 		return d < 10 ?  '0' + d : d
 	}
-	let d = new Date(getBjDate(new Date().getTime()));
+	let d = isBJTime ? new Date(getBjDate(new Date().getTime())) : new Date();
 	return `${d.getFullYear()}-${fill(d.getMonth()+1)}-${fill(d.getDate())} ${fill(d.getHours())}:${fill(d.getMinutes())}:${fill(d.getSeconds())}`
 }
 

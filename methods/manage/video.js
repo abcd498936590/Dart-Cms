@@ -18,7 +18,7 @@ let GetVideoList = async (ctx, next) => {
 	await authToken(ctx, next, async () => {
 
 		let videoColl = getDB().collection('video_info');
-		let { page=1, limit=10, search=false, sort={update_time: 1, video_rate: -1} } = ctx.request.body;    // query get
+		let { page=1, limit=10, search=false, sort={update_time: -1} } = ctx.request.body;    // query get
 
 		limit = limit > 100 ? 100 : limit;
 
@@ -66,8 +66,10 @@ let GetVideoList = async (ctx, next) => {
 						rel_time: 1,
 						introduce: 1,
 						remind_tip: 1,
+						news_id: 1,
 						popular: 1,
 						allow_reply: 1,
+						openSwiper: 1,
 						display: 1,
 						scource_sort: 1,
 						video_type: '$type.name'
@@ -135,7 +137,7 @@ let VideosRemove = async (ctx, next) => {
 
 		let videoInfoColl = getDB().collection('video_info');
 		let videoListColl = getDB().collection('video_list');
-		let msgColl = getDB().collection('msg');
+		let msgColl = getDB().collection('message');
 		let { list=[] } = ctx.request.body;  // body post
 
 		let _id_arr = makeArrObjectID(list);         // 视频数组_id
@@ -163,8 +165,8 @@ let ChangeState = async (ctx, next) => {
 		let _id_arr = makeArrObjectID(list);
 		let promise = videoColl.updateMany({_id: {$in: _id_arr}}, {$set: info});
 		await setResponse(ctx, promise, {
-			error: '当前视频信息修改失败',
-			success: '当前视频信息修改成功'
+			error: '信息修改失败',
+			success: '信息修改成功'
 		})
 
 	}, {admin: true}, {insRole: true, childrenKey: 'updateVideo', parentKey: 'video'})
@@ -197,7 +199,13 @@ let AddVideo = async (ctx, next) => {
 		let videoListColl = getDB().collection('video_list');
 
 		let { info, source=[] } = ctx.request.body;
+		// 分类
 		info["video_type"] = new ObjectID(info["video_type"]);
+		// 关联文章
+		let ns = info.news_id;
+		for(let i=0; i<ns.length; i++){
+			ns[i] = new ObjectID(ns[i]);
+		}
 
 		let videoResult = await videoInfoColl.insertOne(info);
 
@@ -232,9 +240,16 @@ let UpdateCurVideo = async (ctx, next) => {
 		let videoListColl = getDB().collection('video_list');
 
 		let { info, _id, source=[] } = ctx.request.body;
+		// 当前id
 		let vid = new ObjectID(_id);
 		Reflect.deleteProperty(info, '_id');
+		// 分类
 		info["video_type"] = new ObjectID(info["video_type"]);
+		// 关联文章
+		let ns = info.news_id;
+		for(let i=0; i<ns.length; i++){
+			ns[i] = new ObjectID(ns[i]);
+		}
 
 		let queue = [],
 		promise;
@@ -309,6 +324,7 @@ let UpdateScource = async (ctx, next) => {
 		let info = ctx.request.body
 		let _id = new ObjectID(info._id);
 		Reflect.deleteProperty(info, '_id');
+		Reflect.deleteProperty(info, 'vid');
 		Reflect.deleteProperty(info, 'z_name');
 		Reflect.deleteProperty(info, 'is_script');
 

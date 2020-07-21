@@ -3,7 +3,7 @@
 		window.location.href = $(`#${id}`).attr('data-url');
 	}
 })(window, document);
-$(document).ready(function(){
+;(function(w, d){
 	// 源数组
 	var tabSource = [];
 	// 设置历史记录
@@ -62,7 +62,6 @@ $(document).ready(function(){
 		var playerBox = $('#player-con');
 		var tabIndex = query.hasOwnProperty('tab') && tabSource[query['tab']] ? Number(query['tab']) : 0;
 		var listIndex = query.hasOwnProperty('index') && tabSource[tabIndex].list[query['index']] ? Number(query['index']) : 0;
-		var frameH = ($(window).width() < 990 ? 300 : 500) + 'px';
 
 		// 是否禁用
 		var prevBtn = $('#prevBtn');
@@ -87,19 +86,14 @@ $(document).ready(function(){
 		var curUrlInfo = tabSource[tabIndex].list[listIndex].split('$');
 		// 播放
 		if(tabSource[tabIndex].type === 'player'){
-			playerBox.html(`<iframe webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" style="height: ${frameH}; border: none;width: 100%;" class="player-frame" src="/player/index.html?${curUrlInfo[1]}" />`);
+			playerBox.html(`<iframe webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" style="height: 100%;border: none;width: 100%;background: #343434;" class="player-frame" src="/player/index.html?${curUrlInfo[1]}" />`);
 		}else if(tabSource[tabIndex].type === 'iframe'){
-			playerBox.html(`<iframe webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" style="height: ${frameH}; border: none;width: 100%;" class="player-frame" src="${curUrlInfo[1]}" />`);
+			playerBox.html(`<iframe webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" style="height: 100%;border: none;width: 100%;background: #343434;" class="player-frame" src="${curUrlInfo[1]}" />`);
 		}
 		// 历史
 		setHistory(curUrlInfo[0]);
-		// 窗口变化
-		$(window).resize(function(){
-			var frameH = ($(window).width() < 990 ? 300 : 500) + 'px';
-			$('.player-frame').css({height: frameH});
-		});
 	}
 
 	// 调用初始化数据
 	initTabSource();
-});
+})(window, document);

@@ -3,8 +3,6 @@
 	w.openPlot = function(){
 		$('.plot-info').removeClass('plot-fold');
 	}
-})(window, document);
-$(document).ready(function(){
 	// 多余三行隐藏
 	;((len) => {
 		var parentEl = $('.plot-info');
@@ -15,4 +13,4 @@ $(document).ready(function(){
 	    	parentEl.addClass('plot-fold')
 	    }
 	})(3);
-});
+})(window, document);

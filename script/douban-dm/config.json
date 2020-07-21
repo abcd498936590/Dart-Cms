@@ -1,1 +1,17 @@
-{"file":"app.js","name":"豆瓣动漫评分采集","alias":"douban-dm","state":false,"timeout":43200000,"domain":"https://movie.douban.com/j/new_search_subjects?sort=U&range=0,10&tags=%E5%8A%A8%E6%BC%AB"}
+{
+	"file": "app.js",
+	"name": "豆瓣动漫评分",
+	"note": "豆瓣动漫评分采集，豆瓣限制访问频率，每五分钟访问一次。",
+	"alias": "douban-dm",
+	"state": false,
+	"timeout": 10800000,
+	"pid": 0,
+	"runTime": "",
+	"options": {
+		"domain": {
+			"key": "采集地址",
+			"type": "string",
+			"val": "https://movie.douban.com/j/new_search_subjects?sort=U&range=0,10&tags=%E5%8A%A8%E6%BC%AB"
+		}
+	}
+}

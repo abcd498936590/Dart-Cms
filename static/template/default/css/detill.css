@@ -40,8 +40,81 @@
 	font-size: 13px;
 	color: #999;
 }
-
-
+.art-tit{
+	position: relative;
+    font-size: 13px;
+    float: left;
+    width: calc(100% - 112px);
+    height: 72px;
+    padding-right: 10px;
+    overflow: hidden;
+    display: block;
+}
+.art-tit p{
+	line-height: 20px;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+}
+.art-img{
+	float: right;
+    width: 112px;
+    position: relative;
+    display: block;
+    height: 72px;
+    background: #ebebeb;
+    background-position: 50% 50%;
+    background-size: cover;
+    border-radius: 4px;
+    border: 1px solid #f8f8f8;
+}
+.art-tit-2x{
+	position: relative;
+    font-size: 13px;
+    float: left;
+    width: calc(100% - 180px);
+    height: 120px;
+    padding-right: 10px;
+    overflow: hidden;
+    display: block;
+}
+.art-tit-2x p{
+	line-height: 20px;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+}
+.art-img-2x{
+	float: right;
+    width: 180px;
+    position: relative;
+    display: block;
+    height: 120px;
+    background: #ebebeb;
+    background-position: 50% 50%;
+    background-size: cover;
+    border-radius: 4px;
+    border: 1px solid #f8f8f8;
+}
+.art-tips{
+	bottom: 0;
+	line-height: 24px;
+}
+.art-tips .art-type-tip{
+	display: inline-block;
+	border: 1px solid #FF9900;
+	padding: 0 5px;
+	color: #FF9900;
+	vertical-align: bottom;
+}
+.art-tips .art-time-tip{
+	color: #999;
+	padding-left: 10px;
+	display: inline-block;
+	vertical-align: bottom;
+}
 
 
 @media (min-width:992px){

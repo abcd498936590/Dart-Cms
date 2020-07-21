@@ -33,7 +33,7 @@
 							<!-- pc导航栏 -->
 							<div class="pc-nav">
 								<% nav.forEach((item, index) => { %>
-								<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+								<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 								<% }) %>
 							</div>
 							<!--  -->
@@ -113,7 +113,7 @@
 				<!-- mobile导航栏 -->
 				<div class="mobile-nav ov-x-a ov-y-h" style="white-space: nowrap">
 					<% nav.forEach((item, index) => {  %>
-					<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+					<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 					<% }) %>
 				</div>
 				<!--  -->
@@ -139,7 +139,7 @@
 									</div>
 								</div>
 								<div class="text-right mt20">
-									<el-button @click="subUserInfo" type="success" size="small">提交</el-button>
+									<el-button v-on:click="subUserInfo" type="success" size="small">提交</el-button>
 								</div>
 							</div>
 						</el-tab-pane>
@@ -158,7 +158,7 @@
 									</div>
 								</div>
 								<div class="text-right mt20">
-									<el-button @click="subUserPassWord" type="primary" size="small">修改</el-button>
+									<el-button v-on:click="subUserPassWord" type="primary" size="small">修改</el-button>
 								</div>
 							</div>
 						</el-tab-pane>
@@ -184,6 +184,7 @@
 			</div>
 		</div>
 	</div>
+	<!-- 公共js -->
 	<script src="<%= meta.hostName %>/js/public/jquery.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/zui.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/vue.min.js"></script>
@@ -192,8 +193,7 @@
 	<script src="<%= meta.hostName %>/js/public/clipboard.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/public.js"></script>
 	<script src="<%= meta.hostName %>/js/user/user.js"></script>
-
-	<script type="text/javascript" src="https://s9.cnzz.com/z_stat.php?id=1278686399&web_id=1278686399"></script>
-	<script language="javascript" src="http://count44.51yes.com/click.aspx?id=447372028&logo=12" charset="gb2312"></script>
+	<!-- 统计，广告等 -->
+	<%- publicCode %>
 </body>
 </html>

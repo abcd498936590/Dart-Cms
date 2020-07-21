@@ -8,6 +8,7 @@ let loginRouter = require('./manage/login');
 let mainRouter = require('./manage/main');
 let logRouter = require('./manage/log');
 let videoRouter = require('./manage/video');
+let articleRouter = require('./manage/article');
 let userRouter = require('./manage/user');
 let messageRouter = require('./manage/message');
 let navRouter = require('./manage/nav_type');
@@ -28,6 +29,8 @@ route.use(mainRouter.routes()).use(mainRouter.allowedMethods());
 route.use(logRouter.routes()).use(logRouter.allowedMethods());
 // 视频
 route.use(videoRouter.routes()).use(videoRouter.allowedMethods());
+// 文章
+route.use(articleRouter.routes()).use(articleRouter.allowedMethods());
 // 用户
 route.use(userRouter.routes()).use(userRouter.allowedMethods());
 // 留言

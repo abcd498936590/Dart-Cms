@@ -32,7 +32,7 @@
 						<!-- pc导航栏 -->
 						<div class="pc-nav">
 							<% nav.forEach((item, index) => { %>
-							<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+							<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 							<% }) %>
 						</div>
 						<!--  -->
@@ -112,12 +112,28 @@
 			<!-- mobile导航栏 -->
 			<div class="mobile-nav ov-x-a ov-y-h" style="white-space: nowrap">
 				<% nav.forEach((item, index) => {  %>
-				<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+				<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 				<% }) %>
 			</div>
 			<!--  -->
 		</div>
 	</div>
+	<!-- 广告 -->
+	<% if(mealList.length){ %>
+	<div class="container column-margin">
+		<div class="card pl10 pr10 pb10 pt10">
+			<div>
+				<% mealList.forEach((item) => {  %>
+				<div>
+					<a href="<%= item.link %>">
+						<img style="max-width: 100%;" src="<%= item.path %>" alt="" />
+					</a>
+				</div>
+				<% }) %>
+			</div>
+		</div>
+	</div>
+	<% } %>
 	<!-- 详情 -->
 	<div class="container column-margin cart-item">
 		<div class="row no-gutter">
@@ -236,10 +252,11 @@
 					<div class="card pl10 pr10 pt10 pb10">
 						<div class="cart-title row-col">
 							<i class="fa fa-film"></i>
-							<span class="pl10">《<%= videoInfo.videoTitle %>》类似的影片</span>
+							<span class="pl10">《<%= videoInfo.videoTitle %>》相关的影片</span>
 						</div>
 						<div class="link">
 							<div class="row gutter-5">
+							<% if(list.likeMovie && list.likeMovie.length){ %>
 								<% list.likeMovie.forEach((item) => {  %>
 								<div class="col-xs-4 col-sm-4 col-md-3 col-lg-2">
 									<div class="row-col">
@@ -256,13 +273,55 @@
 									</div>
 								</div>
 								<% }) %>
+								<% }else{ %>
+									<div class="pt10 pb10 text-center">暂无内容</div>
+								<% } %>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- 相关文章 -->
+				<div class="column-margin">
+					<div class="card pl10 pr10 pt10 pb10">
+						<div class="cart-title row-col">
+							<i class="fa fa-film"></i>
+							<span class="pl10">《<%= videoInfo.videoTitle %>》相关的文章</span>
+						</div>
+						<div class="link">
+							<div class="row gutter-5">
+								<% if(list.articleRel && list.articleRel.length){ %>
+								<% list.articleRel.forEach((item) => {  %>
+								<div class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
+									<div class="row-col">
+										<a href="<%= meta.hostName %>/article/<%- item._id %>.html">
+											<div class="pt10 pb10">
+												<div class="clearfix pr">
+													<div class="art-tit">
+														<p><%= item.articleTitle %></p>
+													</div>
+													<div data-original="<%= item.articleImage %>" style="background-image: url(<%= meta.hostName %>/image/lazy.gif);" class="art-img pr lazy" ></div>
+													<div class="pa art-tips">
+														<span class="art-type-tip"><%= item.article_type %></span>
+														<span class="art-time-tip"><%= item.update_time %></span>
+													</div>
+												</div>
+											</div>
+										</a>
+									</div>
+								</div>
+								<% }) %>
+								<% }else{ %>
+								<div class="mt10" style="border-top: 1px solid #ddd;">
+									<div class="pt10 pb10 text-center">暂无内容</div>
+								</div>
+								<% } %>
 							</div>
 						</div>
 					</div>
 				</div>
 				<!-- 评价 -->
 				<div id="mgs-app" data-info="<%= JSON.stringify({allowReply: allowReply, isLogin: isLogin, videoId: videoInfo._id}); %>" class="column-margin">
-					<reply-message></reply-message>
+					<reply-message type="video"></reply-message>
 				</div>
 			</div>
 			<div class="hidden-md-and-down col-xs-0 col-lg-3">
@@ -302,7 +361,7 @@
 											<div class="pop-item pub-flex">
 												<i class="num<% if(index == 0) { %> one<% } else if(index == 1) { %> two<% } else if(index == 2) { %> there<% }%>"><%= index + 1 %></i>
 												<a href="<%= meta.hostName %>/detill/<%= item._id %>.html" class="name pub-flex1 text-ellipsis word-wrap"><%= item.videoTitle %></a>
-												<span class="type"><%= item.remind_tip %></span>
+												<span class="type text-ellipsis word-wrap"><%= item.remind_tip %></span>
 											</div>
 										</li>
 										<% }) %>
@@ -346,7 +405,7 @@
 											<div class="pop-item pub-flex">
 												<i class="num<% if(index == 0) { %> one<% } else if(index == 1) { %> two<% } else if(index == 2) { %> there<% }%>"><%= index + 1 %></i>
 												<a href="<%= meta.hostName %>/detill/<%= item._id %>.html" class="name pub-flex1 text-ellipsis word-wrap"><%= item.videoTitle %></a>
-												<span class="type"><%= item.remind_tip %></span>
+												<span class="type text-ellipsis word-wrap"><%= item.remind_tip %></span>
 											</div>
 										</li>
 										<% }) %>
@@ -435,7 +494,7 @@
 		</div>
 	</div>
 	<% } %>
-
+	<!-- 公共js -->
 	<script src="<%= meta.hostName %>/js/public/jquery.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/zui.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/vue.min.js"></script>
@@ -447,17 +506,7 @@
 	<script src="<%= meta.hostName %>/js/public/baidu-push.js"></script>
 	<script src="<%= meta.hostName %>/js/detill/detill.js"></script>
 	<script src="<%= meta.hostName %>/js/detill/message.js"></script>
-
-	<script type="text/javascript" src="https://s9.cnzz.com/z_stat.php?id=1278686399&web_id=1278686399"></script>
-	<script language="javascript" src="http://count44.51yes.com/click.aspx?id=447372028&logo=12" charset="gb2312"></script>
-
-	<script>
-	    (function () {
-	        var id = "2415689770463175004-482";
-	        document.write('<ins style="display:none!important" id="' + id + '"></ins>');
-	        (window.adbyunion = window.adbyunion || []).push(id);
-	    })();
-	</script>
-	<script async defer src="https://js.99tianxin.com/o.js"></script>
+	<!-- 公共js -->
+	<%- publicCode %>
 </body>
 </html>

@@ -1,1 +1,27 @@
-{"file":"app.js","name":"明日资源网","alias":"mrzy","state":false,"timeout":7200000,"analysis":"https://www.leotalk.cn/jiexi/?url=","domain":"https://zy.zcocc.com/api.php/provide/vod/at/xml/"}
+{
+	"file": "app.js",
+	"name": "明日资源网",
+	"note": "明日资源网的内容主要为官方资源，需要配合解析使用。",
+	"alias": "mrzy",
+	"state": false,
+	"timeout": 7200000,
+	"pid": 0,
+	"runTime": "",
+	"options": {
+		"h": {
+			"key": "采集周期",
+			"type": "number",
+			"val": 0
+		},
+		"analysis": {
+			"key": "解析地址",
+			"type": "string",
+			"val": "https://www.leotalk.cn/jiexi/?url="
+		},
+		"domain": {
+			"key": "采集接口",
+			"type": "string",
+			"val": "https://zy.zcocc.com/api.php/provide/vod/at/xml/"
+		}
+	}
+}

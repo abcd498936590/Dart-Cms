@@ -139,11 +139,15 @@ let ReplyMessage = async (ctx, next) => {
 	await authToken(ctx, next, async () => {
 
 		let msgColl = getDB().collection('message');
+		let config = confColl.findOne({});
+		let isBJtime = config.isBjTime;
+
 		let { wid, pid, vid, text } = ctx.request.body;
 		wid = new ObjectID(wid);
 		pid = new ObjectID(pid);
 		vid = new ObjectID(vid);
 
+		let times = new Date().getTime();
 		let data = {
 			vid,
 		    uid: ctx.session2.user._id,
@@ -151,7 +155,7 @@ let ReplyMessage = async (ctx, next) => {
 		    wid,
 		    agree: true,
 		    display: true,
-		    date: new Date().getTime(),
+		    date: isBJtime ? getBjDate(times).getTime() : times,
 		    text,
 		}
 		let promise = msgColl.insertOne(data);

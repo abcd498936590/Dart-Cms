@@ -14,6 +14,8 @@ client.then(async (db) => {
     await new Promise(async (resolve, reject) => {
 
         console.log('正在清除原始数据表');
+        await DB.dropCollection('article_info').catch(err => {});
+        await DB.dropCollection('article_list').catch(err => {});
         await DB.dropCollection('session1').catch(err => {});
         await DB.dropCollection('session2').catch(err => {});
         await DB.dropCollection('config').catch(err => {});
@@ -34,6 +36,8 @@ client.then(async (db) => {
 
     await new Promise(async (resolve, reject) => {
         console.log('开始重建数据表');
+        await DB.createCollection('article_info');
+        await DB.createCollection('article_list');
         await DB.createCollection('session1');
         await DB.createCollection('session2');
         await DB.createCollection('config');
@@ -53,6 +57,24 @@ client.then(async (db) => {
 	console.log('开始初始化数据库！');
 
     await new Promise(async (resolve, reject) => {
+        console.log('开始创建文章数据');
+        // 视频分类字段索引
+        let videoInfoColl = DB.collection('article_info');
+        await videoInfoColl.createIndexes([
+            {key:{article_title: 1}},
+            {key:{article_image: 1}},
+            {key:{allow_reply: 1}},
+            {key:{content_id: 1}},
+            {key:{openSwiper: 1}},
+            {key:{display: 1}}
+        ]);
+        resolve();
+    })
+    .then(res=>{
+        console.log('文章数据创建完成');
+    })
+
+    await new Promise(async (resolve, reject) => {
         console.log('开始创建配置数据');
         // 源alias索引
         let confColl = DB.collection('config');
@@ -62,6 +84,8 @@ client.then(async (db) => {
             "description" : "XXX电影网为您提供最新最快的视频分享数据。看热门电影,上春秋影院,支持手机电影在线观看。",
             "footerInfo" : "<p>XXX影视免费提供的完整版全集电影电视剧在线观看数据来自网络视频资源平台，本站未参与任何制作与下载，仅供WEB引用。</p><br/><p>Copyright © XXX影院XXX.COM</p>",
             "notice" : "<p>请勿相信视频中的广告</p>",
+            "publicCode" : "",
+            "openStatic" : false,
             "openSwiper" : false,
             "isBjTime" : true,
             "allowReply" : false,
@@ -127,8 +151,9 @@ client.then(async (db) => {
             name: '电影',
             parent_id: false,
             display: true,
+            nav_type: 'video',
             seo: {
-                title: '电影',
+                title: '免费在线观看,电影',
                 keywords: '功夫片，动作片，爱情片，福利片，科幻片，恐怖片，纪录片，战争片，微电影，喜剧片',
                 description: '最新电影抢先看，vip电影'
             },
@@ -143,8 +168,9 @@ client.then(async (db) => {
                     name: '动作片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '动作片',
+                        title: '免费在线观看,电影',
                         keywords: '动作片',
                         description: '动作片'
                     },
@@ -155,8 +181,9 @@ client.then(async (db) => {
                     name: '喜剧片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '喜剧片',
+                        title: '免费在线观看,电影',
                         keywords: '喜剧片',
                         description: '喜剧片'
                     },
@@ -167,8 +194,9 @@ client.then(async (db) => {
                     name: '爱情片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '爱情片',
+                        title: '免费在线观看,电影',
                         keywords: '爱情片',
                         description: '爱情片'
                     },
@@ -179,8 +207,9 @@ client.then(async (db) => {
                     name: '科幻片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '科幻片',
+                        title: '免费在线观看,电影',
                         keywords: '科幻片',
                         description: '科幻片'
                     },
@@ -191,8 +220,9 @@ client.then(async (db) => {
                     name: '恐怖片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '恐怖片',
+                        title: '免费在线观看,电影',
                         keywords: '恐怖片',
                         description: '恐怖片'
                     },
@@ -203,8 +233,9 @@ client.then(async (db) => {
                     name: '剧情片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '剧情片',
+                        title: '免费在线观看,电影',
                         keywords: '剧情片',
                         description: '剧情片'
                     },
@@ -215,8 +246,9 @@ client.then(async (db) => {
                     name: '战争片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '战争片',
+                        title: '免费在线观看,电影',
                         keywords: '战争片',
                         description: '战争片'
                     },
@@ -227,8 +259,9 @@ client.then(async (db) => {
                     name: '记录片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '记录片',
+                        title: '免费在线观看,电影',
                         keywords: '记录片',
                         description: '记录片'
                     },
@@ -239,8 +272,9 @@ client.then(async (db) => {
                     name: '动画片',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '动画片',
+                        title: '免费在线观看,电影',
                         keywords: '动画片',
                         description: '动画片'
                     },
@@ -251,8 +285,9 @@ client.then(async (db) => {
                     name: '微电影',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '微电影',
+                        title: '免费在线观看,电影',
                         keywords: '微电影',
                         description: '微电影'
                     },
@@ -266,8 +301,9 @@ client.then(async (db) => {
             name: '电视剧',
             parent_id: false,
             display: true,
+            nav_type: 'video',
             seo: {
-                title: '电视剧',
+                title: '免费在线观看,电视剧',
                 keywords: '最新美剧，热门韩剧，日剧，泰剧，国产剧，欧美剧',
                 description: '最新电视剧抢先看，vip热剧'
             },
@@ -282,8 +318,9 @@ client.then(async (db) => {
                     name: '国产剧',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '国产剧',
+                        title: '免费在线观看,电视剧',
                         keywords: '国产剧',
                         description: '国产剧'
                     },
@@ -294,8 +331,9 @@ client.then(async (db) => {
                     name: '香港剧',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '香港剧',
+                        title: '免费在线观看,电视剧',
                         keywords: '香港剧',
                         description: '香港剧'
                     },
@@ -306,8 +344,9 @@ client.then(async (db) => {
                     name: '韩国剧',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '韩国剧',
+                        title: '免费在线观看,电视剧',
                         keywords: '韩国剧',
                         description: '韩国剧'
                     },
@@ -318,8 +357,9 @@ client.then(async (db) => {
                     name: '欧美剧',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '欧美剧',
+                        title: '免费在线观看,电视剧',
                         keywords: '欧美剧',
                         description: '欧美剧'
                     },
@@ -330,8 +370,9 @@ client.then(async (db) => {
                     name: '台湾剧',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '台湾剧',
+                        title: '免费在线观看,电视剧',
                         keywords: '台湾剧',
                         description: '台湾剧'
                     },
@@ -342,8 +383,9 @@ client.then(async (db) => {
                     name: '日本剧',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '日本剧',
+                        title: '免费在线观看,电视剧',
                         keywords: '日本剧',
                         description: '日本剧'
                     },
@@ -354,8 +396,9 @@ client.then(async (db) => {
                     name: '海外剧',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '海外剧',
+                        title: '免费在线观看,电视剧',
                         keywords: '海外剧',
                         description: '海外剧'
                     },
@@ -369,8 +412,9 @@ client.then(async (db) => {
             name: '综艺',
             parent_id: false,
             display: true,
+            nav_type: 'video',
             seo: {
-                title: '综艺',
+                title: '免费在线观看,综艺',
                 keywords: '热门综艺，日韩综艺，欧美综艺，港台综艺，内地综艺',
                 description: '最新综艺抢先看'
             },
@@ -385,8 +429,9 @@ client.then(async (db) => {
                     name: '内地综艺',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '内地综艺',
+                        title: '免费在线观看,综艺',
                         keywords: '内地综艺',
                         description: '内地综艺'
                     },
@@ -397,8 +442,9 @@ client.then(async (db) => {
                     name: '港台综艺',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '港台综艺',
+                        title: '免费在线观看,综艺',
                         keywords: '港台综艺',
                         description: '港台综艺'
                     },
@@ -409,8 +455,9 @@ client.then(async (db) => {
                     name: '欧美综艺',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '欧美综艺',
+                        title: '免费在线观看,综艺',
                         keywords: '欧美综艺',
                         description: '欧美综艺'
                     },
@@ -421,8 +468,9 @@ client.then(async (db) => {
                     name: '日韩综艺',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '日韩综艺',
+                        title: '免费在线观看,综艺',
                         keywords: '日韩综艺',
                         description: '日韩综艺'
                     },
@@ -436,8 +484,9 @@ client.then(async (db) => {
             name: '动漫',
             parent_id: false,
             display: true,
+            nav_type: 'video',
             seo: {
-                title: '动漫',
+                title: '免费在线观看,动漫',
                 keywords: '国产动漫，日韩动漫，欧美动漫，港台动漫，海外动漫',
                 description: '最新，热门动漫抢先看'
             },
@@ -452,8 +501,9 @@ client.then(async (db) => {
                     name: '国产动漫',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '国产动漫',
+                        title: '免费在线观看,动漫',
                         keywords: '国产动漫',
                         description: '国产动漫'
                     },
@@ -464,8 +514,9 @@ client.then(async (db) => {
                     name: '日韩动漫',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '日韩动漫',
+                        title: '免费在线观看,动漫',
                         keywords: '日韩动漫',
                         description: '日韩动漫'
                     },
@@ -476,8 +527,9 @@ client.then(async (db) => {
                     name: '欧美动漫',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '欧美动漫',
+                        title: '免费在线观看,动漫',
                         keywords: '欧美动漫',
                         description: '欧美动漫'
                     },
@@ -488,8 +540,9 @@ client.then(async (db) => {
                     name: '港台动漫',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '港台动漫',
+                        title: '免费在线观看,动漫',
                         keywords: '港台动漫',
                         description: '港台动漫'
                     },
@@ -500,8 +553,9 @@ client.then(async (db) => {
                     name: '海外动漫',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '海外动漫',
+                        title: '免费在线观看,动漫',
                         keywords: '海外动漫',
                         description: '海外动漫'
                     },
@@ -512,8 +566,9 @@ client.then(async (db) => {
                     name: '大陆动漫',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '大陆动漫',
+                        title: '免费在线观看,动漫',
                         keywords: '大陆动漫',
                         description: '大陆动漫'
                     },
@@ -524,8 +579,9 @@ client.then(async (db) => {
                     name: '日本动漫',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '日本动漫',
+                        title: '免费在线观看,动漫',
                         keywords: '日本动漫',
                         description: '日本动漫'
                     },
@@ -536,8 +592,9 @@ client.then(async (db) => {
                     name: '美国动漫',
                     parent_id: pid,
                     display: true,
+                    nav_type: 'video',
                     seo: {
-                        title: '美国动漫',
+                        title: '免费在线观看,动漫',
                         keywords: '美国动漫',
                         description: '美国动漫'
                     },
@@ -551,8 +608,9 @@ client.then(async (db) => {
             name: '福利',
             parent_id: false,
             display: true,
+            nav_type: 'video',
             seo: {
-                title: '福利',
+                title: '免费在线观看,福利',
                 keywords: '各种主播福利',
                 description: '直播福利，大秀福利'
             },
@@ -564,13 +622,60 @@ client.then(async (db) => {
             name: '伦理片',
             parent_id: false,
             display: false,
+            nav_type: 'video',
             seo: {
-                title: '伦理片',
+                title: '免费在线观看,伦理片',
                 keywords: '日韩伦理，欧美伦理',
                 description: '最新最热伦理片'
             },
             type: 'nav_type',
             index: 5
+        });
+        // 资讯
+        await otherColl.insertOne({
+            name: '资讯',
+            parent_id: false,
+            display: true,
+            nav_type: 'article',
+            seo: {
+                title: '新闻影视资讯大全',
+                keywords: '电影资讯,电视剧资讯,影视资讯',
+                description: '最新，热门动漫抢先看'
+            },
+            type: 'nav_type',
+            index: 6
+        })
+        .then(async (result) => {
+            // 资讯 => 子分类
+            let pid = result.insertedId;
+            await otherColl.insertMany([
+                {
+                    name: '公告',
+                    parent_id: pid,
+                    display: true,
+                    nav_type: 'article',
+                    seo: {
+                        title: '公告',
+                        keywords: '公告',
+                        description: '公告'
+                    },
+                    type: 'nav_type',
+                    index: 0
+                },
+                {
+                    name: '新闻',
+                    parent_id: pid,
+                    display: true,
+                    nav_type: 'article',
+                    seo: {
+                        title: '新闻影视资讯大全',
+                        keywords: '新闻',
+                        description: '新闻'
+                    },
+                    type: 'nav_type',
+                    index: 1
+                }
+            ]);
         });
         resolve();
     })
@@ -634,6 +739,11 @@ client.then(async (db) => {
                     removeVideo: true,
                     updateVideo: true,
                     addVideo: true
+                },
+                article: {
+                    removeArticle: true,
+                    updateArticle: true,
+                    addArticle: true
                 },
                 script: {
                     runScript: true,

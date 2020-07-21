@@ -51,7 +51,7 @@
 			},
 			subUserInfo: function(){
 				this.ajax({
-					url: '/web/setUserInfo',
+					url: '/public/setUserInfo',
 					data: {
 						type: true,
 						nickName: this.userInfo.nickName
@@ -66,7 +66,7 @@
 			},
 			subUserPassWord: function(){
 				this.ajax({
-					url: '/web/setUserInfo',
+					url: '/public/setUserInfo',
 					data: {
 						type: false,
 						oldPassWord: this.passWord.oldPassWord,
@@ -82,7 +82,7 @@
 				var This = this;
 				this.tabOneLoading = true;
 				this.ajax({
-					url: '/web/getUserInfo',
+					url: '/public/getUserInfo',
 					data: false
 				}, function(data){
 					if(data.code === 200){

@@ -67,7 +67,9 @@ let RemoveNav = async (ctx, next) => {
 
 		let navColl = getDB().collection('other');
 		let videoColl = getDB().collection('video_info');
-		let { _id, parent_id } = ctx.request.body;         // body post
+		let artColl = getDB().collection('article_info');
+
+		let { _id, parent_id, nav_type="video" } = ctx.request.body;         // body post
 		_id = new ObjectID(_id);
 		let promise,
 		errorMsg = '';
@@ -79,7 +81,13 @@ let RemoveNav = async (ctx, next) => {
 			for(let arg of children){
 				inArr.push(arg._id)
 			}
-			let vLen = await videoColl.find({video_type: {$in: inArr}}).count();
+			let vLen = 0;
+
+			if(nav_type === 'article'){
+				vLen = await artColl.find({video_type: {$in: inArr}}).count();
+			}else{
+				vLen = await videoColl.find({video_type: {$in: inArr}}).count();
+			}
 			//
 			promise = !vLen ?
 				Promise.all([
@@ -89,7 +97,12 @@ let RemoveNav = async (ctx, next) => {
 				Promise.reject();
 			errorMsg = vLen ? `该分类还有 ${vLen} 条数据，请先删除或者转移` : '导航删除失败';
 		}else{  // 二级导航
-			let vLen = await videoColl.find({video_type: _id}).count();
+			let vLen = 0;
+			if(nav_type === 'article'){
+				vLen = await artColl.find({video_type: _id}).count();
+			}else{
+				vLen = await videoColl.find({video_type: _id}).count();
+			}
 			promise = !vLen ? navColl.deleteOne({_id}) : Promise.reject()
 			errorMsg = vLen ? `该分类还有 ${vLen} 条数据，请先删除或者转移` : '导航删除失败';
 		}

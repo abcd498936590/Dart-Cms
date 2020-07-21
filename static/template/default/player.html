@@ -32,7 +32,7 @@
 						<!-- pc导航栏 -->
 						<div class="pc-nav">
 							<% nav.forEach((item, index) => { %>
-							<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+							<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 							<% }) %>
 						</div>
 						<!--  -->
@@ -112,12 +112,28 @@
 			<!-- mobile导航栏 -->
 			<div class="mobile-nav ov-x-a ov-y-h" style="white-space: nowrap">
 				<% nav.forEach((item, index) => {  %>
-				<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= item.link %>"><%= item.name %></a>
+				<a class="<% if(item.active) { %>active<% } else { %> <% } %>" href="<%= meta.hostName %><%= item.link %>"><%= item.name %></a>
 				<% }) %>
 			</div>
 			<!--  -->
 		</div>
 	</div>
+	<!-- 广告 -->
+	<% if(mealList.length){ %>
+	<div class="container column-margin">
+		<div class="card pl10 pr10 pb10 pt10">
+			<div>
+				<% mealList.forEach((item) => {  %>
+				<div>
+					<a href="<%= item.link %>">
+						<img style="max-width: 100%;" src="<%= item.path %>" alt="" />
+					</a>
+				</div>
+				<% }) %>
+			</div>
+		</div>
+	</div>
+	<% } %>
 	<!-- 播放器 更多 详情 -->
 	<div class="container column-margin cart-item">
 		<div class="row no-gutter">
@@ -127,11 +143,22 @@
 					<div class="row-col">
 						<div class="pr player-box">
 							<div class="notice"></div>
-							<div id="player-con">
-
-							</div>
+							<div id="player-con"></div>
+							<script>
+							;(function(){
+								var playerCon = document.getElementById('player-con');
+								function setPlayerStyle (){
+									var cW = document.body.clientWidth;
+									var playerH = (cW < 990 ? 300 : 500) + 'px';
+									playerCon.style.height = playerH;
+									playerCon.style.backgroundColor = '#000';
+								}
+								setPlayerStyle();
+								window.onresize = setPlayerStyle;
+							})();
+							</script>
 						</div>
-						<div class="pub-flex">
+						<div class="pub-flex mt10">
 							<!-- 信息 -->
 							<div class="play-info link pub-flex1">
 								<h1 id="video_info" data-info="<%= JSON.stringify({videoTitle: videoInfo.videoTitle, _id: videoInfo._id}); %>" class="pt5 pb5" style="color: #333;font-size: 25px;font-weight: normal;"><%= videoInfo.videoTitle %></h1>
@@ -251,7 +278,7 @@
 				</div>
 				<!-- 评价 -->
 				<div id="mgs-app" data-info="<%= JSON.stringify({allowReply: allowReply, isLogin: isLogin, videoId: videoInfo._id}); %>" class="column-margin">
-					<reply-message></reply-message>
+					<reply-message type="video"></reply-message>
 				</div>
 			</div>
 			<div class="hidden-md-and-down col-lg-3 col-xs-0">
@@ -291,7 +318,7 @@
 											<div class="pop-item pub-flex">
 												<i class="num<% if(index == 0) { %> one<% } else if(index == 1) { %> two<% } else if(index == 2) { %> there<% }%>"><%= index + 1 %></i>
 												<a href="<%= meta.hostName %>/detill/<%= item._id %>.html" class="name pub-flex1 text-ellipsis word-wrap"><%= item.videoTitle %></a>
-												<span class="type"><%= item.remind_tip %></span>
+												<span class="type text-ellipsis word-wrap"><%= item.remind_tip %></span>
 											</div>
 										</li>
 										<% }) %>
@@ -335,7 +362,7 @@
 											<div class="pop-item pub-flex">
 												<i class="num<% if(index == 0) { %> one<% } else if(index == 1) { %> two<% } else if(index == 2) { %> there<% }%>"><%= index + 1 %></i>
 												<a href="<%= meta.hostName %>/detill/<%= item._id %>.html" class="name pub-flex1 text-ellipsis word-wrap"><%= item.videoTitle %></a>
-												<span class="type"><%= item.remind_tip %></span>
+												<span class="type text-ellipsis word-wrap"><%= item.remind_tip %></span>
 											</div>
 										</li>
 										<% }) %>
@@ -424,7 +451,7 @@
 		</div>
 	</div>
 	<% } %>
-
+	<!-- 公共js -->
 	<script src="<%= meta.hostName %>/js/public/jquery.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/zui.min.js"></script>
 	<script src="<%= meta.hostName %>/js/public/vue.min.js"></script>
@@ -437,17 +464,7 @@
 	<script src="<%= meta.hostName %>/js/detill/detill.js"></script>
 	<script src="<%= meta.hostName %>/js/detill/player.js"></script>
 	<script src="<%= meta.hostName %>/js/detill/message.js"></script>
-
-	<script type="text/javascript" src="https://s9.cnzz.com/z_stat.php?id=1278686399&web_id=1278686399"></script>
-	<script language="javascript" src="http://count44.51yes.com/click.aspx?id=447372028&logo=12" charset="gb2312"></script>
-
-	<script>
-	    (function () {
-	        var id = "2415689770463175004-482";
-	        document.write('<ins style="display:none!important" id="' + id + '"></ins>');
-	        (window.adbyunion = window.adbyunion || []).push(id);
-	    })();
-	</script>
-	<script async defer src="https://js.99tianxin.com/o.js"></script>
+	<!-- 统计，广告等 -->
+	<%- publicCode %>
 </body>
 </html>
